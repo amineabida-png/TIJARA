@@ -10,7 +10,6 @@ const AUTH_USER = process.env.TIJARA_USER || 'admin';
 const AUTH_PASS = process.env.TIJARA_PASSWORD;
 
 function checkAuth(req) {
-  if (!AUTH_PASS) return true; // pas de protection si variable non définie
   const header = req.headers['authorization'] || '';
   if (!header.startsWith('Basic ')) return false;
   const [user, pass] = Buffer.from(header.slice(6), 'base64').toString().split(':');
