@@ -331,7 +331,7 @@ function paieDefauts2026(){
     annee:2026, smigM:3422, hMois:191,
     cnssSalTaux:4.48, cnssPlafond:6000, amoSalTaux:2.26,
     patPS:8.98, patAF:6.40, patTFP:1.60, patAMO:4.11,
-    fp1Taux:35, fp1PlafM:2500, fpSeuilM:6500, fp2Taux:25, fp2PlafM:2916.67,
+    fp1Taux:35, fp1PlafM:2500, fpSeuilM:6500, fp2Taux:25, fp2PlafM:2916.67, fpBase:'brut',
     chargeFam:50, maxFam:6, cimrMaxPct:6,
     bareme:[
       {max:3333.33, taux:0,  somme:0},
@@ -2488,9 +2488,10 @@ function calcPaie(emp, s){
   const amo = r2(sbi * cfg.amoSalTaux/100);
   const cimrPct = Math.min(Number(emp.tauxCimr)||0, cfg.cimrMaxPct);
   const cimr = r2(sbi * cimrPct/100);
+  const fpBaseM = cfg.fpBase==='net' ? r2(sbi - cnss - amo - cimr) : sbi;
   const fp = sbi <= cfg.fpSeuilM
-    ? r2(Math.min(sbi * cfg.fp1Taux/100, cfg.fp1PlafM))
-    : r2(Math.min(sbi * cfg.fp2Taux/100, cfg.fp2PlafM));
+    ? r2(Math.min(fpBaseM * cfg.fp1Taux/100, cfg.fp1PlafM))
+    : r2(Math.min(fpBaseM * cfg.fp2Taux/100, cfg.fp2PlafM));
   const rni = r2(Math.max(0, sbi - cnss - amo - cimr - fp));
   let irBrut = 0;
   for(const t of cfg.bareme){
@@ -2776,6 +2777,11 @@ function vPaieConfig(){
       ${f('pc_fp2','Taux 2 (%) — au-delà',c.fp2Taux)}
       ${f('pc_fp2p','Plafond mensuel taux 2 (DH)',c.fp2PlafM)}
       ${f('pc_fam','Charge de famille (DH/mois/pers.)',c.chargeFam)}
+      <div class="field"><label>Base des frais professionnels</label>
+        <select id="pc_fpbase">
+          <option value="brut" ${(c.fpBase||'brut')==='brut'?'selected':''}>Brut imposable (CGI art. 59 — recommandé)</option>
+          <option value="net" ${c.fpBase==='net'?'selected':''}>Brut − cotisations (pratique de certains cabinets)</option>
+        </select></div>
     </div>
     <h3 style="margin-top:16px">Barème IR mensuel (revenu net imposable)</h3>
     <table class="list" style="max-width:560px"><thead><tr><th>Tranche jusqu'à (DH/mois)</th><th class="num">Taux</th><th class="num">Somme à déduire</th></tr></thead><tbody>
@@ -2798,6 +2804,7 @@ function savePaieConfig(){
   c.fp1Taux=parseFloat($('#pc_fp1').value)||0; c.fp1PlafM=parseFloat($('#pc_fp1p').value)||0;
   c.fpSeuilM=parseFloat($('#pc_fps').value)||0; c.fp2Taux=parseFloat($('#pc_fp2').value)||0;
   c.fp2PlafM=parseFloat($('#pc_fp2p').value)||0; c.chargeFam=parseFloat($('#pc_fam').value)||0;
+  c.fpBase=$('#pc_fpbase').value;
   saveDB(); render(); toast('Paramètres de paie enregistrés ✓');
 }
 
