@@ -1,0 +1,10 @@
+{
+  "name": "tijara-gestion-commerciale",
+  "version": "1.0.0",
+  "description": "Gestion commerciale marocaine — fichier unique (Tijara)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" }
+}

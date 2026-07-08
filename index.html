@@ -1,0 +1,2870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tijara — Gestion Commerciale Maroc</title>
+<style>
+:root{
+  --ink:#16211F; --muted:#5C6B67; --bg:#F2F4F3; --panel:#FFFFFF; --line:#DFE6E3;
+  --teal:#0C4A46; --teal-deep:#07322F; --teal-soft:#E3EEEC;
+  --saffron:#D9922E; --saffron-soft:#FBF0DD;
+  --green:#1E7A4E; --green-soft:#E2F2E9;
+  --red:#B7362C; --red-soft:#F9E7E4;
+  --blue:#22577A; --blue-soft:#E4EEF5;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(12,74,70,.06), 0 4px 14px rgba(12,74,70,.07);
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html{font-size:15px}
+body{
+  font-family:"Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background:var(--bg); color:var(--ink); min-height:100vh;
+}
+button{font-family:inherit; cursor:pointer}
+input,select,textarea{font-family:inherit; font-size:.94rem; color:var(--ink)}
+
+/* ---------- Layout ---------- */
+.app{display:flex; min-height:100vh}
+.sidebar{
+  width:232px; flex-shrink:0; background:var(--teal); color:#EAF3F1;
+  display:flex; flex-direction:column; position:sticky; top:0; height:100vh;
+}
+.brand{
+  padding:20px 18px 16px; border-bottom:1px solid rgba(255,255,255,.12);
+  background:
+    linear-gradient(rgba(7,50,47,.35), rgba(7,50,47,.35)),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 10px, transparent 10px 20px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.05) 0 10px, transparent 10px 20px),
+    var(--teal-deep);
+}
+.brand h1{font-size:1.25rem; letter-spacing:.4px; font-weight:700}
+.brand h1 span{color:var(--saffron)}
+.brand p{font-size:.72rem; color:#B9D0CC; margin-top:3px; letter-spacing:.6px; text-transform:uppercase}
+.nav{flex:1; overflow-y:auto; padding:10px 0}
+.nav button{
+  display:flex; align-items:center; gap:10px; width:100%;
+  background:none; border:none; color:#CFE0DD; text-align:left;
+  padding:10px 18px; font-size:.93rem; border-left:3px solid transparent;
+}
+.nav button:hover{background:rgba(255,255,255,.07); color:#fff}
+.nav button.active{background:rgba(255,255,255,.1); color:#fff; border-left-color:var(--saffron); font-weight:600}
+.nav .sep{font-size:.68rem; letter-spacing:1px; text-transform:uppercase; color:#7FA39E; padding:14px 18px 4px}
+.nav .ico{width:20px; text-align:center; font-size:1rem}
+.side-foot{padding:12px 18px; font-size:.72rem; color:#8FB0AB; border-top:1px solid rgba(255,255,255,.12)}
+
+.main{flex:1; min-width:0; padding:24px 28px 60px}
+.page-head{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; flex-wrap:wrap}
+.page-head h2{font-size:1.35rem; font-weight:700}
+.page-head .sub{font-size:.85rem; color:var(--muted); margin-top:2px}
+
+/* ---------- Components ---------- */
+.btn{
+  border:1px solid var(--line); background:var(--panel); color:var(--ink);
+  padding:8px 14px; border-radius:8px; font-size:.88rem; font-weight:600;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn:hover{border-color:#B9C7C3; background:#FAFBFB}
+.btn-primary{background:var(--teal); border-color:var(--teal); color:#fff}
+.btn-primary:hover{background:var(--teal-deep); border-color:var(--teal-deep)}
+.btn-accent{background:var(--saffron); border-color:var(--saffron); color:#fff}
+.btn-accent:hover{filter:brightness(.94)}
+.btn-danger{color:var(--red); border-color:#EAC5C0}
+.btn-danger:hover{background:var(--red-soft)}
+.btn-sm{padding:4px 9px; font-size:.8rem; border-radius:6px}
+.btn-ghost{border:none; background:none; padding:4px 7px}
+.btn-ghost:hover{background:var(--teal-soft); border-radius:6px}
+
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow-x:auto}
+.card-pad{padding:18px}
+.card h3{font-size:.95rem; margin-bottom:12px}
+
+.toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
+.toolbar input[type=search], .toolbar select{
+  padding:8px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; min-width:220px;
+}
+.toolbar select{min-width:160px}
+
+table.list{width:100%; border-collapse:collapse; font-size:.9rem}
+table.list th{
+  text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.6px;
+  color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--line); background:#FAFBFB;
+}
+table.list td{padding:10px 12px; border-bottom:1px solid #ECF0EE; vertical-align:middle}
+table.list tr:last-child td{border-bottom:none}
+table.list tr:hover td{background:#F7FAF9}
+td.num, th.num{text-align:right; font-variant-numeric:tabular-nums}
+td.actions{text-align:right; white-space:nowrap}
+.empty{padding:34px; text-align:center; color:var(--muted); font-size:.9rem}
+
+.badge{display:inline-block; padding:3px 9px; border-radius:99px; font-size:.74rem; font-weight:700; letter-spacing:.2px}
+.b-green{background:var(--green-soft); color:var(--green)}
+.b-red{background:var(--red-soft); color:var(--red)}
+.b-amber{background:var(--saffron-soft); color:#9A6410}
+.b-blue{background:var(--blue-soft); color:var(--blue)}
+.b-gray{background:#EDF0EF; color:var(--muted)}
+
+/* ---------- Dashboard ---------- */
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px}
+.stat{padding:16px 18px}
+.stat .lbl{font-size:.74rem; text-transform:uppercase; letter-spacing:.7px; color:var(--muted)}
+.stat .val{font-size:1.45rem; font-weight:800; margin-top:6px; font-variant-numeric:tabular-nums}
+.stat .hint{font-size:.76rem; color:var(--muted); margin-top:4px}
+.stat.accent{border-top:3px solid var(--saffron)}
+.stat.good{border-top:3px solid var(--green)}
+.stat.bad{border-top:3px solid var(--red)}
+.stat.info{border-top:3px solid var(--blue)}
+.dash-grid{display:grid; grid-template-columns:1.6fr 1fr; gap:14px; align-items:start}
+@media(max-width:1000px){.dash-grid{grid-template-columns:1fr}}
+.chart{display:flex; align-items:flex-end; gap:8px; height:170px; padding:6px 4px 0}
+.chart .bar{flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; height:100%}
+.chart .bar i{display:block; width:100%; max-width:44px; background:linear-gradient(180deg,#12615C,var(--teal)); border-radius:5px 5px 0 0; min-height:2px}
+.chart .bar b{font-size:.68rem; color:var(--muted); font-weight:600}
+.chart .bar .v{font-size:.66rem; color:var(--teal); font-weight:700; font-variant-numeric:tabular-nums}
+
+/* ---------- Modal ---------- */
+.overlay{
+  position:fixed; inset:0; background:rgba(10,35,33,.45); display:none;
+  align-items:flex-start; justify-content:center; padding:30px 16px; z-index:50; overflow-y:auto;
+}
+.overlay.open{display:flex}
+.modal{background:#fff; border-radius:12px; width:100%; max-width:640px; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:pop .18s ease}
+.modal.wide{max-width:980px}
+@keyframes pop{from{transform:translateY(8px); opacity:0} to{transform:none; opacity:1}}
+.modal-head{display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line)}
+.modal-head h3{font-size:1.05rem}
+.modal-body{padding:20px; overflow-x:auto}
+.modal-foot{padding:14px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap}
+.x{border:none; background:none; font-size:1.3rem; color:var(--muted); line-height:1}
+.x:hover{color:var(--ink)}
+
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{font-size:.78rem; font-weight:700; color:#3E4C49}
+.field input,.field select,.field textarea{
+  padding:8px 11px; border:1px solid var(--line); border-radius:8px; background:#fff; width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid rgba(12,74,70,.25); border-color:var(--teal)}
+.field .req{color:var(--red)}
+
+/* ---------- Éditeur de document ---------- */
+table.lines{width:100%; border-collapse:collapse; font-size:.87rem; margin-top:6px}
+table.lines th{font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); text-align:left; padding:6px; border-bottom:1px solid var(--line)}
+table.lines td{padding:5px 4px; border-bottom:1px solid #F0F3F2; vertical-align:middle}
+table.lines input, table.lines select{width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px}
+table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; padding-right:8px}
+.totaux{margin-top:14px; margin-left:auto; width:320px; max-width:100%; font-size:.92rem}
+.totaux .row{display:flex; justify-content:space-between; padding:5px 4px}
+.totaux .row.grand{border-top:2px solid var(--ink); margin-top:6px; padding-top:9px; font-weight:800; font-size:1.05rem}
+.totaux .row span:last-child{font-variant-numeric:tabular-nums}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:#fff; padding:10px 20px; border-radius:99px; font-size:.88rem;
+  opacity:0; pointer-events:none; transition:.25s; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+#toast.show{opacity:1; transform:translateX(-50%)}
+#toast.err{background:var(--red)}
+
+.tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.tabs button{border:1px solid var(--line); background:#fff; padding:7px 16px; border-radius:99px; font-size:.85rem; font-weight:600; color:var(--muted)}
+.tabs button:hover{border-color:#B9C7C3}
+.tabs button.active{background:var(--teal); border-color:var(--teal); color:#fff}
+.chips{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px}
+.chip{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 14px; font-size:.78rem; color:var(--muted)}
+.chip b{display:block; font-size:.98rem; color:var(--ink); margin-top:2px; font-variant-numeric:tabular-nums}
+
+/* ---------- Rendu des documents imprimables ---------- */
+#printArea{display:none}
+@media print{
+  @page{margin:7mm 10mm}
+  body{background:#fff}
+  .app, #toast, .overlay{display:none !important}
+  #printArea{display:block}
+  .doc{min-height:calc(100vh - 3mm); max-width:none; padding:0}
+}
+.doc{font-family:"Segoe UI", Arial, sans-serif; color:#111; font-size:12.5px; max-width:800px; margin:0 auto; padding:10px 0; display:flex; flex-direction:column; min-height:96vh}
+.doc-head{display:flex; justify-content:space-between; gap:20px; border-bottom:3px solid var(--teal); padding-bottom:14px}
+.doc-head .soc h1{font-size:20px; color:var(--teal); letter-spacing:.3px}
+.doc-head .soc p{font-size:11.5px; color:#333; margin-top:2px}
+.doc-title{text-align:right}
+.doc-title h2{font-size:22px; color:var(--teal); text-transform:uppercase; letter-spacing:1px}
+.doc-title p{font-size:12px; margin-top:3px}
+.doc-meta{display:flex; justify-content:space-between; gap:20px; margin:16px 0}
+.doc-meta .blk{border:1px solid #CBD5D2; border-radius:8px; padding:10px 14px; min-width:250px}
+.doc-meta .blk .t{font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--teal); font-weight:700; margin-bottom:5px}
+.doc-meta .blk p{font-size:12px; margin:1.5px 0}
+table.doc-lines{width:100%; border-collapse:collapse; margin-top:6px; font-size:12px}
+table.doc-lines th{background:var(--teal); color:#fff; padding:7px 9px; text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px}
+table.doc-lines td{padding:7px 9px; border-bottom:1px solid #DDE4E2}
+table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
+.doc-tot{margin-left:auto; width:300px; margin-top:12px; font-size:12.5px}
+.doc-tot .row{display:flex; justify-content:space-between; padding:4px 8px}
+.doc-tot .row.grand{background:var(--teal); color:#fff; font-weight:800; border-radius:6px; padding:8px; font-size:14px; margin-top:4px}
+.doc-lettres{margin-top:14px; border:1px solid #CBD5D2; border-left:4px solid var(--saffron); border-radius:6px; padding:9px 13px; font-size:12px; font-style:italic}
+.doc-notes{margin-top:12px; font-size:11.5px; color:#333; white-space:pre-wrap}
+.doc-sign{display:flex; justify-content:space-between; margin-top:34px; font-size:12px}
+.doc-sign div{width:220px; text-align:center}
+.doc-sign .l{border-top:1px solid #999; margin-top:55px; padding-top:5px; color:#555}
+.doc-foot{margin-top:auto; border-top:2px solid var(--teal); padding-top:5px; text-align:center; font-size:10px; color:#444; line-height:1.5}
+@media(max-width:900px){
+  .sidebar{width:64px}
+  .sidebar .brand h1, .sidebar .brand p, .nav button span.txt, .nav .sep, .side-foot{display:none}
+  .nav button{justify-content:center; padding:12px 0}
+  .main{padding:16px}
+}
+.pos{display:grid; grid-template-columns:1.45fr 1fr; gap:14px; align-items:start}
+@media(max-width:1000px){.pos{grid-template-columns:1fr}}
+.pos-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:8px; max-height:62vh; overflow-y:auto; padding:2px}
+.pos-grid button{border:1px solid var(--line); background:#fff; border-radius:10px; padding:10px 8px; text-align:center; font-size:.82rem; line-height:1.3}
+.pos-grid button:hover{border-color:var(--teal); background:var(--teal-soft)}
+.pos-grid button b{display:block; color:var(--teal); margin-top:4px}
+.pos-grid button small{display:block; margin-top:2px}
+.pos-total{font-size:1.7rem; font-weight:800; text-align:right; padding:12px 4px 6px; font-variant-numeric:tabular-nums; color:var(--teal)}
+.ticket{font-family:'Courier New', monospace; width:270px; margin:0 auto; font-size:12px; color:#000; padding:10px 0}
+.ticket h3{text-align:center; font-size:14px; margin-bottom:4px}
+.ticket p{margin:2px 0}
+.ticket .c{text-align:center}
+.ticket .r{text-align:right}
+.ticket table{width:100%; border-collapse:collapse}
+.ticket td{padding:2px 0; vertical-align:top}
+.ticket .sep2{border-top:1px dashed #000; margin:6px 0}
+#lockScreen{position:fixed; inset:0; background:var(--teal-deep); display:none; align-items:center; justify-content:center; z-index:300}
+.lock-card{background:var(--teal); border:1px solid rgba(255,255,255,.15); border-radius:14px; padding:34px 30px; width:320px; text-align:center; color:#EAF3F1}
+.lock-card h1{font-size:1.6rem; margin-bottom:4px}
+.lock-card p{font-size:.8rem; color:#B9D0CC; margin-bottom:16px}
+.lock-card input{width:100%; padding:11px 14px; border-radius:8px; border:none; margin-bottom:12px; text-align:center; font-size:1rem}
+.doc.paged{min-height:auto; padding:0}
+.page{display:flex; flex-direction:column; min-height:96vh; padding:10px 0; page-break-after:always; break-after:page}
+.page:last-child{page-break-after:auto; break-after:auto}
+.doc-title p.pagenum{font-size:10px; color:#777; margin-top:6px}
+@media print{
+  .page{min-height:calc(100vh - 3mm); padding:0}
+  table.doc-lines{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Tijara<span>.</span></h1>
+      <p>Gestion commerciale</p>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="dashboard" class="active"><span class="ico">◧</span><span class="txt">Tableau de bord</span></button>
+      <div class="sep">Ventes</div>
+      <button data-view="devis"><span class="ico">✎</span><span class="txt">Devis</span></button>
+      <button data-view="proformas"><span class="ico">≋</span><span class="txt">Proformas</span></button>
+      <button data-view="commandes"><span class="ico">☑</span><span class="txt">Commandes clients</span></button>
+      <button data-view="factures"><span class="ico">▤</span><span class="txt">Factures</span></button>
+      <button data-view="avoirs"><span class="ico">↩</span><span class="txt">Avoirs</span></button>
+      <button data-view="retours"><span class="ico">⟲</span><span class="txt">Retours clients</span></button>
+      <button data-view="bl"><span class="ico">⇥</span><span class="txt">Bons de livraison</span></button>
+      <button data-view="reglements"><span class="ico">◈</span><span class="txt">Règlements</span></button>
+      <div class="sep">Achats</div>
+      <button data-view="bc"><span class="ico">⇤</span><span class="txt">Bons de commande</span></button>
+      <button data-view="fachats"><span class="ico">▥</span><span class="txt">Factures d'achat</span></button>
+      <button data-view="retoursF"><span class="ico">⟳</span><span class="txt">Retours fournisseurs</span></button>
+      <div class="sep">Caisse &amp; finances</div>
+      <button data-view="caisse"><span class="ico">⌸</span><span class="txt">Caisse (POS)</span></button>
+      <button data-view="charges"><span class="ico">▽</span><span class="txt">Charges</span></button>
+      <button data-view="tresorerie"><span class="ico">◨</span><span class="txt">Trésorerie</span></button>
+      <button data-view="paie"><span class="ico">⛊</span><span class="txt">Paie (RH)</span></button>
+      <div class="sep">Analyse</div>
+      <button data-view="echeancier"><span class="ico">◷</span><span class="txt">Échéancier</span></button>
+      <button data-view="rapports"><span class="ico">◫</span><span class="txt">Rapports</span></button>
+      <div class="sep">Données</div>
+      <button data-view="clients"><span class="ico">☰</span><span class="txt">Clients</span></button>
+      <button data-view="fournisseurs"><span class="ico">⌂</span><span class="txt">Fournisseurs</span></button>
+      <button data-view="produits"><span class="ico">▦</span><span class="txt">Produits &amp; stock</span></button>
+      <div class="sep">Système</div>
+      <button data-view="parametres"><span class="ico">⚙</span><span class="txt">Paramètres</span></button>
+    </nav>
+    <div class="side-foot">100% local · vos données restent sur cet appareil</div>
+  </aside>
+
+  <main class="main">
+    <div id="view"></div>
+  </main>
+</div>
+
+<!-- Modal générique -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBox">
+    <div class="modal-head">
+      <h3 id="modalTitle">—</h3>
+      <button class="x" onclick="closeModal()" aria-label="Fermer">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="printArea"></div>
+<script>
+/* =====================================================
+   TIJARA — Gestion commerciale marocaine (fichier unique)
+   Ventes · Achats · Stock multi-dépôts · Trésorerie · Rapports
+   ===================================================== */
+
+/* ---------- Utilitaires ---------- */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (Number(n)||0).toLocaleString('fr-FR',{minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtDH = n => fmt(n) + ' DH';
+const today = () => new Date().toISOString().slice(0,10);
+const dfr = d => d ? d.split('-').reverse().join('/') : '';
+const r2 = n => Math.round((Number(n)||0)*100)/100;
+
+/* ---------- Stockage & migration ---------- */
+const DB_KEY = 'tijara_gcm_v1';
+let memoryFallback = null;
+
+function paieDefauts2026(){
+  return {
+    annee:2026, smigM:3422, hMois:191,
+    cnssSalTaux:4.48, cnssPlafond:6000, amoSalTaux:2.26,
+    patPS:8.98, patAF:6.40, patTFP:1.60, patAMO:4.11,
+    fp1Taux:35, fp1PlafM:2500, fpSeuilM:6500, fp2Taux:25, fp2PlafM:2916.67,
+    chargeFam:50, maxFam:6, cimrMaxPct:6,
+    bareme:[
+      {max:3333.33, taux:0,  somme:0},
+      {max:5000,    taux:10, somme:333.33},
+      {max:6666.67, taux:20, somme:833.33},
+      {max:8333.33, taux:30, somme:1500},
+      {max:15000,   taux:34, somme:1833.33},
+      {max:null,    taux:37, somme:2283.33}
+    ],
+    anciennete:[{ans:25,pct:25},{ans:20,pct:20},{ans:12,pct:15},{ans:5,pct:10},{ans:2,pct:5}]
+  };
+}
+function defaultDB(){
+  return {
+    societe:{ nom:'Ma Société SARL', activite:'Négoce et distribution', adresse:'12, Rue Exemple, Quartier Industriel', ville:'Casablanca',
+      tel:'05 22 00 00 00', email:'contact@masociete.ma', ice:'', idf:'', rc:'', patente:'', cnss:'', capital:'100 000,00', rib:'', tvaDefaut:20,
+      logo:'', docStyle:{couleur:'#0C4A46', accent:'#D9922E', police:'Segoe UI'} },
+    depots:[{id:'dep1', nom:'Dépôt principal'}],
+    clients:[], fournisseurs:[], produits:[],
+    devis:[], proformas:[], commandes:[], factures:[], avoirs:[], retours:[], bl:[], bc:[], fachats:[], retoursF:[],
+    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[],
+    employes:[], paies:[],
+    comptes:[{id:'cpt-caisse', nom:'Caisse', type:'caisse', soldeInitial:0},{id:'cpt-banque', nom:'Banque principale', type:'banque', soldeInitial:0}],
+    securite:{actif:false, admin:'', vendeur:''},
+    paieConfig: paieDefauts2026(),
+    seq:{}
+  };
+}
+function migrate(data){
+  const d = Object.assign(defaultDB(), data||{});
+  d.societe = Object.assign(defaultDB().societe, (data||{}).societe||{});
+  d.societe.docStyle = Object.assign({couleur:'#0C4A46', accent:'#D9922E', police:'Segoe UI'}, ((data||{}).societe||{}).docStyle||{});
+  if(!Array.isArray(d.depots) || !d.depots.length) d.depots = [{id:'dep1', nom:'Dépôt principal'}];
+  const d0 = d.depots[0].id;
+  (d.produits||[]).forEach(p=>{
+    if(!p.stocks){ p.stocks = {}; p.stocks[d0] = Number(p.stock)||0; }
+    p.stock = r2(Object.values(p.stocks).reduce((a,b)=>a+(Number(b)||0),0));
+  });
+  if(!Array.isArray(d.comptes) || !d.comptes.length)
+    d.comptes = [{id:'cpt-caisse', nom:'Caisse', type:'caisse', soldeInitial:0},{id:'cpt-banque', nom:'Banque principale', type:'banque', soldeInitial:0}];
+  d.securite = Object.assign({actif:false, admin:'', vendeur:''}, d.securite||{});
+  d.paieConfig = Object.assign(paieDefauts2026(), d.paieConfig||{});
+  if(!Array.isArray(d.paieConfig.bareme) || !d.paieConfig.bareme.length) d.paieConfig.bareme = paieDefauts2026().bareme;
+  if(!Array.isArray(d.paieConfig.anciennete) || !d.paieConfig.anciennete.length) d.paieConfig.anciennete = paieDefauts2026().anciennete;
+  const cptC = (d.comptes.find(c=>c.type==='caisse')||d.comptes[0]).id;
+  const cptB = (d.comptes.find(c=>c.type==='banque')||d.comptes[0]).id;
+  [d.reglements, d.reglementsF].forEach(arr=> (arr||[]).forEach(r=>{
+    if(!r.compteId) r.compteId = /Espèces/.test(r.mode||'') ? cptC : cptB;
+  }));
+  return d;
+}
+function loadDB(){
+  try{
+    const s = localStorage.getItem(DB_KEY);
+    if(s) return migrate(JSON.parse(s));
+  }catch(e){}
+  return memoryFallback || defaultDB();
+}
+function saveDB(){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
+  catch(e){ memoryFallback = DB; }
+}
+let DB = loadDB();
+
+function toast(msg, err){
+  const t = $('#toast');
+  t.textContent = msg; t.className = err ? 'err show' : 'show';
+  clearTimeout(t._h); t._h = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+function nextNumero(type){
+  const an = new Date().getFullYear();
+  const key = type + an;
+  DB.seq[key] = (DB.seq[key]||0) + 1;
+  const pref = {devis:'DEV', proformas:'PRO', commandes:'CDE', factures:'FAC', avoirs:'AV', retours:'RET', bl:'BL', bc:'BC', fachats:'ACH', retoursF:'RTF', recus:'REC', paies:'BP'}[type];
+  return pref + '-' + an + '-' + String(DB.seq[key]).padStart(4,'0');
+}
+const clientById = id => DB.clients.find(c=>c.id===id);
+const fournisseurById = id => DB.fournisseurs.find(f=>f.id===id);
+const produitById = id => DB.produits.find(p=>p.id===id);
+const factureById = id => DB.factures.find(f=>f.id===id);
+const fachatById = id => DB.fachats.find(f=>f.id===id);
+const depotById = id => DB.depots.find(d=>d.id===id);
+const compteById = id => DB.comptes.find(c=>c.id===id);
+
+/* ---------- Stock multi-dépôts ---------- */
+function setStock(p, depotId, delta){
+  if(!p.stocks) p.stocks = {};
+  p.stocks[depotId] = r2((Number(p.stocks[depotId])||0) + delta);
+  p.stock = r2(Object.values(p.stocks).reduce((a,b)=>a+(Number(b)||0),0));
+}
+function appliquerStock(lignes, sens, depotId){ // -1 : sortie · +1 : entrée
+  const dep = depotId && depotById(depotId) ? depotId : DB.depots[0].id;
+  (lignes||[]).forEach(l=>{
+    const p = produitById(l.produitId);
+    if(p) setStock(p, dep, sens*(Number(l.qte)||0));
+  });
+}
+
+/* ---------- Calculs ---------- */
+function calcDoc(doc){
+  let ht=0, remise=0; const tvaMap={};
+  (doc.lignes||[]).forEach(l=>{
+    const brut = r2((Number(l.qte)||0) * (Number(l.pu)||0));
+    const rem  = r2(brut * (Number(l.remise)||0) / 100);
+    const net  = r2(brut - rem);
+    ht += net; remise += rem;
+    const tx = Number(l.tva)||0;
+    tvaMap[tx] = r2((tvaMap[tx]||0) + net * tx/100);
+  });
+  ht = r2(ht);
+  const tva = r2(Object.values(tvaMap).reduce((a,b)=>a+b,0));
+  return { ht, remise:r2(remise), tvaMap, tva, ttc: r2(ht+tva) };
+}
+const rasMontant = f => r2(calcDoc(f).ttc * (Number(f.rasTaux)||0)/100);
+function totalRegle(factureId){
+  return r2(DB.reglements.filter(r=>r.factureId===factureId && r.statut!=='impayé').reduce((a,r)=>a+(Number(r.montant)||0),0));
+}
+function totalRegleF(factureId){
+  return r2(DB.reglementsF.filter(r=>r.factureId===factureId && r.statut!=='impayé').reduce((a,r)=>a+(Number(r.montant)||0),0));
+}
+function totalAvoirs(factureId){
+  return r2(DB.avoirs.filter(a=>a.origineId===factureId).reduce((s,a)=>s+calcDoc(a).ttc,0));
+}
+function resteFacture(f){
+  return r2(Math.max(0, calcDoc(f).ttc - totalRegle(f.id) - totalAvoirs(f.id) - rasMontant(f)));
+}
+function resteFachat(f){
+  return r2(Math.max(0, calcDoc(f).ttc - totalRegleF(f.id)));
+}
+function statutFacture(f){
+  const ttc = calcDoc(f).ttc, credit = totalRegle(f.id) + totalAvoirs(f.id) + rasMontant(f);
+  if(ttc - credit <= 0.004) return {code:'payee', lbl:'Soldée', cls:'b-green'};
+  if(credit <= 0.004) return {code:'impayee', lbl:'Impayée', cls:'b-red'};
+  return {code:'partielle', lbl:'Partielle', cls:'b-amber'};
+}
+function statutFachat(f){
+  const ttc = calcDoc(f).ttc, paye = totalRegleF(f.id);
+  if(ttc - paye <= 0.004) return {code:'payee', lbl:'Payée', cls:'b-green'};
+  if(paye <= 0.004) return {code:'impayee', lbl:'À payer', cls:'b-red'};
+  return {code:'partielle', lbl:'Partielle', cls:'b-amber'};
+}
+
+/* ---------- Montant en lettres (français) ---------- */
+const U19 = ['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf'];
+const DIZ = ['','dix','vingt','trente','quarante','cinquante','soixante','soixante','quatre-vingt','quatre-vingt'];
+function deuxChiffres(n){
+  if(n < 20) return U19[n];
+  const d = Math.floor(n/10), u = n % 10;
+  if(d === 7 || d === 9){
+    if(d === 7 && u === 1) return 'soixante et onze';
+    return DIZ[d] + '-' + U19[10+u];
+  }
+  if(u === 0) return DIZ[d] + (d === 8 ? 's' : '');
+  if(u === 1 && d !== 8) return DIZ[d] + ' et un';
+  return DIZ[d] + '-' + U19[u];
+}
+function troisChiffres(n){
+  const c = Math.floor(n/100), r = n % 100;
+  let s = '';
+  if(c > 0){
+    s = (c > 1 ? U19[c] + ' ' : '') + 'cent' + (c > 1 && r === 0 ? 's' : '');
+    if(r > 0) s += ' ';
+  }
+  if(r > 0 || n === 0) s += deuxChiffres(r);
+  return s;
+}
+function enLettres(n){
+  n = Math.floor(Math.abs(n));
+  if(n === 0) return 'zéro';
+  const parts = [];
+  for(const [div,s1,s2] of [[1000000000,'milliard','milliards'],[1000000,'million','millions']]){
+    if(n >= div){
+      const q = Math.floor(n/div);
+      parts.push(troisChiffres(q) + ' ' + (q > 1 ? s2 : s1));
+      n %= div;
+    }
+  }
+  if(n >= 1000){
+    const q = Math.floor(n/1000);
+    parts.push(q === 1 ? 'mille' : troisChiffres(q).replace(/(cent|vingt)s$/, '$1') + ' mille');
+    n %= 1000;
+  }
+  if(n > 0) parts.push(troisChiffres(n));
+  return parts.join(' ');
+}
+function montantEnLettres(m){
+  m = r2(Math.abs(m));
+  const dh = Math.floor(m), c = Math.round((m - dh)*100);
+  let s = enLettres(dh) + ' dirham' + (dh > 1 ? 's' : '');
+  if(c > 0) s += ' et ' + enLettres(c) + ' centime' + (c > 1 ? 's' : '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* ---------- Navigation & modal ---------- */
+let currentView = 'dashboard';
+document.querySelectorAll('#nav button').forEach(b=>{
+  b.onclick = ()=>{
+    currentView = b.dataset.view;
+    syncNav(); render();
+  };
+});
+function syncNav(){
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.view===currentView));
+}
+function render(){
+  if(ROLE==='vendeur' && !VUES_VENDEUR.includes(currentView)){ currentView = 'caisse'; syncNav(); }
+  const v = currentView;
+  const fn = {dashboard:vDashboard, clients:()=>vTiers('clients'), fournisseurs:()=>vTiers('fournisseurs'),
+    produits:vProduits, devis:()=>vDocs('devis'), proformas:()=>vDocs('proformas'), commandes:()=>vDocs('commandes'),
+    factures:()=>vDocs('factures'), avoirs:()=>vDocs('avoirs'), retours:()=>vDocs('retours'), bl:()=>vDocs('bl'),
+    bc:()=>vDocs('bc'), fachats:()=>vDocs('fachats'), retoursF:()=>vDocs('retoursF'),
+    caisse:vCaisse, charges:vCharges, tresorerie:vTresorerie, paie:vPaie,
+    reglements:vReglements, echeancier:vEcheancier, rapports:vRapports, parametres:vParametres}[v];
+  $('#view').innerHTML = fn ? fn() : '';
+  if(v==='dashboard') drawChart();
+}
+function openModal(title, bodyHTML, footHTML, wide){
+  $('#modalTitle').textContent = title;
+  $('#modalBody').innerHTML = bodyHTML;
+  $('#modalFoot').innerHTML = footHTML || '';
+  $('#modalBox').classList.toggle('wide', !!wide);
+  $('#overlay').classList.add('open');
+}
+function closeModal(){ $('#overlay').classList.remove('open'); }
+$('#overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+/* ---------- Tableau de bord ---------- */
+function vDashboard(){
+  const an = new Date().getFullYear(), mois = new Date().getMonth();
+  let caAn=0, caMois=0, impaye=0, aPayer=0;
+  DB.factures.forEach(f=>{
+    const d = new Date(f.date), ttc = calcDoc(f).ttc;
+    if(d.getFullYear()===an){ caAn += ttc; if(d.getMonth()===mois) caMois += ttc; }
+    impaye += resteFacture(f);
+  });
+  DB.avoirs.forEach(a=>{
+    const d = new Date(a.date), ttc = calcDoc(a).ttc;
+    if(d.getFullYear()===an){ caAn -= ttc; if(d.getMonth()===mois) caMois -= ttc; }
+  });
+  DB.fachats.forEach(f=> aPayer += resteFachat(f));
+  const alertes = DB.produits.filter(p => Number(p.stock) <= Number(p.stockMin||0));
+  const devisAttente = DB.devis.filter(d=>d.statut==='en attente').length;
+  const bcEnCours = DB.bc.filter(b=>(b.statut||'en cours')==='en cours').length;
+  const recentes = [...DB.factures].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+
+  return `
+  <div class="page-head"><div><h2>Tableau de bord</h2><div class="sub">${new Date().toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long', year:'numeric'})} — ${esc(DB.societe.nom)}</div></div>
+    <button class="btn btn-primary" onclick="editDoc('factures')">+ Nouvelle facture</button></div>
+  <div class="stats">
+    <div class="card stat good"><div class="lbl">CA du mois (TTC net)</div><div class="val">${fmtDH(caMois)}</div><div class="hint">Avoirs déduits</div></div>
+    <div class="card stat info"><div class="lbl">CA ${an} (TTC net)</div><div class="val">${fmtDH(caAn)}</div><div class="hint">${DB.factures.length} facture(s) · ${DB.avoirs.length} avoir(s)</div></div>
+    <div class="card stat bad"><div class="lbl">Reste à encaisser</div><div class="val">${fmtDH(impaye)}</div><div class="hint">Clients — voir Échéancier</div></div>
+    <div class="card stat accent"><div class="lbl">À payer fournisseurs</div><div class="val">${fmtDH(aPayer)}</div><div class="hint">${devisAttente} devis en attente · ${bcEnCours} BC en cours</div></div>
+  </div>
+  <div class="dash-grid">
+    <div class="card card-pad">
+      <h3>Chiffre d'affaires net ${an} par mois (TTC, avoirs déduits)</h3>
+      <div class="chart" id="chart"></div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <div class="card card-pad">
+        <h3>⚠ Alertes de stock (${alertes.length})</h3>
+        ${alertes.length ? `<table class="list"><tbody>${alertes.slice(0,6).map(p=>`
+          <tr><td>${esc(p.designation)}</td><td class="num"><span class="badge b-red">${fmt(p.stock)} ${esc(p.unite||'')}</span></td></tr>`).join('')}
+        </tbody></table>` : '<div class="empty">Aucun produit sous le seuil minimal.</div>'}
+      </div>
+      <div class="card card-pad">
+        <h3>Dernières factures</h3>
+        ${recentes.length ? `<table class="list"><tbody>${recentes.map(f=>{const s=statutFacture(f); return `
+          <tr><td><b>${esc(f.numero)}</b><br><small style="color:var(--muted)">${esc(clientById(f.clientId)?.nom||'—')}</small></td>
+          <td class="num">${fmtDH(calcDoc(f).ttc)}<br><span class="badge ${s.cls}">${s.lbl}</span></td></tr>`;}).join('')}
+        </tbody></table>` : '<div class="empty">Aucune facture pour l\u2019instant.<br>Créez votre première facture !</div>'}
+      </div>
+    </div>
+  </div>`;
+}
+function drawChart(){
+  const el = $('#chart'); if(!el) return;
+  const an = new Date().getFullYear();
+  const mois = Array(12).fill(0);
+  DB.factures.forEach(f=>{ const d=new Date(f.date); if(d.getFullYear()===an) mois[d.getMonth()] += calcDoc(f).ttc; });
+  DB.avoirs.forEach(a=>{ const d=new Date(a.date); if(d.getFullYear()===an) mois[d.getMonth()] -= calcDoc(a).ttc; });
+  for(let i=0;i<12;i++) mois[i] = Math.max(0, mois[i]);
+  const max = Math.max(...mois, 1);
+  const noms = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  el.innerHTML = mois.map((v,i)=>`
+    <div class="bar" title="${noms[i]} : ${fmtDH(v)}">
+      <span class="v">${v ? Math.round(v/1000)+'k' : ''}</span>
+      <i style="height:${Math.max(2, v/max*115)}px"></i><b>${noms[i]}</b>
+    </div>`).join('');
+}
+
+/* ---------- Clients & Fournisseurs ---------- */
+let filtreTiers = '';
+function vTiers(type){
+  const isC = type==='clients';
+  const arr = DB[type].filter(t => (t.nom+' '+(t.ice||'')+' '+(t.ville||'')).toLowerCase().includes(filtreTiers.toLowerCase()));
+  return `
+  <div class="page-head"><div><h2>${isC?'Clients':'Fournisseurs'}</h2><div class="sub">${DB[type].length} enregistré(s)</div></div>
+    <button class="btn btn-primary" onclick="editTiers('${type}')">+ Ajouter</button></div>
+  <div class="toolbar"><input type="search" placeholder="Rechercher (nom, ICE, ville)…" value="${esc(filtreTiers)}"
+    oninput="filtreTiers=this.value; render()"></div>
+  <div class="card">${arr.length ? `
+    <table class="list"><thead><tr><th>Nom / Raison sociale</th><th>ICE</th><th>Ville</th><th>Téléphone</th>
+      <th class="num">${isC?'CA facturé':'Total achats'}</th><th class="num">${isC?'Solde dû':'À payer'}</th><th></th></tr></thead><tbody>
+    ${arr.map(t=>{
+      let ca=0, du=0;
+      if(isC) DB.factures.filter(f=>f.clientId===t.id).forEach(f=>{ca+=calcDoc(f).ttc; du+=resteFacture(f);});
+      else DB.fachats.filter(f=>f.clientId===t.id).forEach(f=>{ca+=calcDoc(f).ttc; du+=resteFachat(f);});
+      if(isC) DB.avoirs.filter(a=>a.clientId===t.id).forEach(a=>{ca-=calcDoc(a).ttc;});
+      return `<tr>
+      <td><b>${esc(t.nom)}</b>${t.email?`<br><small style="color:var(--muted)">${esc(t.email)}</small>`:''}</td>
+      <td>${esc(t.ice||'—')}</td><td>${esc(t.ville||'—')}</td><td>${esc(t.tel||'—')}</td>
+      <td class="num">${fmtDH(ca)}</td>
+      <td class="num" style="color:${du>0.004?'var(--red)':'var(--green)'}; font-weight:700">${fmtDH(du)}</td>
+      <td class="actions">
+        ${isC?`<button class="btn btn-ghost btn-sm" title="Imprimer le relevé de compte" onclick="imprimerReleve('${t.id}')">📄 Relevé</button>`
+        :`<button class="btn btn-ghost btn-sm" title="Imprimer le relevé fournisseur" onclick="imprimerReleveF('${t.id}')">📄 Relevé</button>`}
+        <button class="btn btn-ghost btn-sm" title="Modifier" onclick="editTiers('${type}','${t.id}')">✎</button>
+        <button class="btn btn-ghost btn-sm" title="Supprimer" onclick="delTiers('${type}','${t.id}')" style="color:var(--red)">🗑</button>
+      </td></tr>`;}).join('')}
+    </tbody></table>` : `<div class="empty">Aucun ${isC?'client':'fournisseur'}. Cliquez sur « + Ajouter » pour commencer.</div>`}
+  </div>`;
+}
+function editTiers(type, id){
+  const t = id ? DB[type].find(x=>x.id===id) : {};
+  const isC = type==='clients';
+  openModal((id?'Modifier':'Nouveau')+' '+(isC?'client':'fournisseur'), `
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1"><label>Nom / Raison sociale <span class="req">*</span></label><input id="t_nom" value="${esc(t.nom||'')}"></div>
+      <div class="field"><label>ICE (15 chiffres)</label><input id="t_ice" value="${esc(t.ice||'')}" maxlength="15" placeholder="000000000000000"></div>
+      <div class="field"><label>Identifiant fiscal (IF)</label><input id="t_if" value="${esc(t.idf||'')}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Adresse</label><input id="t_adr" value="${esc(t.adresse||'')}"></div>
+      <div class="field"><label>Ville</label><input id="t_ville" value="${esc(t.ville||'')}"></div>
+      <div class="field"><label>Téléphone</label><input id="t_tel" value="${esc(t.tel||'')}"></div>
+      <div class="field"><label>Email</label><input id="t_email" type="email" value="${esc(t.email||'')}"></div>
+      <div class="field"><label>RC (registre de commerce)</label><input id="t_rc" value="${esc(t.rc||'')}"></div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveTiers('${type}','${id||''}')">Enregistrer</button>`);
+}
+function saveTiers(type, id){
+  const nom = $('#t_nom').value.trim();
+  if(!nom) return toast('Le nom est obligatoire.', true);
+  const ice = $('#t_ice').value.trim();
+  if(ice && !/^\d{15}$/.test(ice)) return toast('L\u2019ICE doit comporter exactement 15 chiffres.', true);
+  const o = { nom, ice, idf:$('#t_if').value.trim(), adresse:$('#t_adr').value.trim(), ville:$('#t_ville').value.trim(),
+    tel:$('#t_tel').value.trim(), email:$('#t_email').value.trim(), rc:$('#t_rc').value.trim() };
+  if(id){ Object.assign(DB[type].find(x=>x.id===id), o); }
+  else { o.id = uid(); DB[type].push(o); }
+  saveDB(); closeModal(); render(); toast('Enregistré ✓');
+}
+function delTiers(type, id){
+  if(type==='clients' && ['factures','devis','proformas','avoirs','bl','commandes','retours'].some(t=>DB[t].some(d=>d.clientId===id)))
+    return toast('Impossible : des documents sont liés à ce client.', true);
+  if(type==='fournisseurs' && (DB.bc.some(b=>b.clientId===id) || DB.fachats.some(f=>f.clientId===id) || DB.retoursF.some(f=>f.clientId===id)))
+    return toast('Impossible : des documents d\u2019achat sont liés à ce fournisseur.', true);
+  if(!confirm('Supprimer définitivement ?')) return;
+  DB[type] = DB[type].filter(x=>x.id!==id);
+  saveDB(); render(); toast('Supprimé');
+}
+
+/* ---------- Produits & stock multi-dépôts ---------- */
+let filtreProd = '';
+function vProduits(){
+  const arr = DB.produits.filter(p => (p.ref+' '+p.designation+' '+(p.codeBarres||'')).toLowerCase().includes(filtreProd.toLowerCase()));
+  const valStock = DB.produits.reduce((a,p)=> a + (Number(p.stock)||0)*(Number(p.prixAchat)||0), 0);
+  const multi = DB.depots.length > 1;
+  return `
+  <div class="page-head"><div><h2>Produits &amp; stock</h2><div class="sub">${DB.produits.length} article(s) · ${DB.depots.length} dépôt(s) · valeur du stock (prix d'achat HT) : <b>${fmtDH(valStock)}</b></div></div>
+    <button class="btn btn-primary" onclick="editProduit()">+ Ajouter un produit</button></div>
+  <div class="toolbar"><input type="search" placeholder="Rechercher (référence, désignation, code-barres)…" value="${esc(filtreProd)}" oninput="filtreProd=this.value; render()">
+    <button class="btn" onclick="ouvrirInventaire()">📋 Inventaire physique</button></div>
+  <div class="card">${arr.length ? `
+    <table class="list"><thead><tr><th>Réf.</th><th>Désignation</th><th class="num">Prix achat HT</th><th class="num">Prix vente HT</th>
+      <th class="num">TVA</th><th class="num">Stock total</th><th></th></tr></thead><tbody>
+    ${arr.map(p=>{
+      const alerte = Number(p.stock) <= Number(p.stockMin||0);
+      const detail = multi ? '<br><small style="color:var(--muted)">'+DB.depots.map(dp=>esc(dp.nom)+' : '+fmt(p.stocks?.[dp.id]||0)).join(' · ')+'</small>' : '';
+      return `<tr>
+      <td><b>${esc(p.ref||'—')}</b></td><td>${esc(p.designation)}</td>
+      <td class="num">${fmtDH(p.prixAchat)}</td><td class="num"><b>${fmtDH(p.prixVente)}</b></td>
+      <td class="num">${p.tva}%</td>
+      <td class="num"><span class="badge ${alerte?'b-red':'b-green'}">${fmt(p.stock)} ${esc(p.unite||'')}</span>${detail}</td>
+      <td class="actions">
+        <button class="btn btn-ghost btn-sm" title="Entrée / sortie / transfert de stock" onclick="mvtStock('${p.id}')">± Stock</button>
+        <button class="btn btn-ghost btn-sm" title="Modifier" onclick="editProduit('${p.id}')">✎</button>
+        <button class="btn btn-ghost btn-sm" title="Supprimer" onclick="delProduit('${p.id}')" style="color:var(--red)">🗑</button>
+      </td></tr>`;}).join('')}
+    </tbody></table>` : '<div class="empty">Aucun produit. Ajoutez vos articles pour les retrouver dans vos devis et factures.</div>'}
+  </div>`;
+}
+function editProduit(id){
+  const p = id ? produitById(id) : {tva: DB.societe.tvaDefaut ?? 20, unite:'U', stocks:{}};
+  openModal((id?'Modifier':'Nouveau')+' produit', `
+    <div class="grid2">
+      <div class="field"><label>Référence</label><input id="p_ref" value="${esc(p.ref||'')}" placeholder="ART-001"></div>
+      <div class="field"><label>Code-barres (EAN, douchette)</label><input id="p_cb" value="${esc(p.codeBarres||'')}" placeholder="611…"></div>
+      <div class="field"><label>Unité</label>
+        <select id="p_unite">${['U','Pièce','Kg','g','L','m','m²','m³','Carton','Lot','Heure','Jour','Forfait'].map(u=>`<option ${p.unite===u?'selected':''}>${u}</option>`).join('')}</select></div>
+      <div class="field" style="grid-column:1/-1"><label>Désignation <span class="req">*</span></label><input id="p_des" value="${esc(p.designation||'')}"></div>
+      <div class="field"><label>Prix d'achat HT (DH)</label><input id="p_pa" type="number" step="0.01" min="0" value="${p.prixAchat ?? ''}"></div>
+      <div class="field"><label>Prix de vente HT (DH) <span class="req">*</span></label><input id="p_pv" type="number" step="0.01" min="0" value="${p.prixVente ?? ''}"></div>
+      <div class="field"><label>Taux de TVA</label>
+        <select id="p_tva">${[20,14,10,7,0].map(t=>`<option value="${t}" ${Number(p.tva)===t?'selected':''}>${t===0?'0% (exonéré)':t+' %'}</option>`).join('')}</select></div>
+      <div class="field"><label>Seuil d'alerte stock</label><input id="p_min" type="number" step="0.01" min="0" value="${p.stockMin ?? 0}"></div>
+      ${DB.depots.map(dep=>`
+      <div class="field"><label>Stock — ${esc(dep.nom)}</label>
+        <input class="p_stk" data-dep="${dep.id}" type="number" step="0.01" value="${p.stocks?.[dep.id] ?? 0}"></div>`).join('')}
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveProduit('${id||''}')">Enregistrer</button>`);
+}
+function saveProduit(id){
+  const des = $('#p_des').value.trim();
+  const pv = parseFloat($('#p_pv').value);
+  if(!des) return toast('La désignation est obligatoire.', true);
+  if(isNaN(pv) || pv < 0) return toast('Prix de vente invalide.', true);
+  const stocks = {};
+  document.querySelectorAll('.p_stk').forEach(i=> stocks[i.dataset.dep] = parseFloat(i.value)||0);
+  const o = { ref:$('#p_ref').value.trim(), codeBarres:$('#p_cb').value.trim(), designation:des, unite:$('#p_unite').value,
+    prixAchat:parseFloat($('#p_pa').value)||0, prixVente:pv, tva:Number($('#p_tva').value),
+    stocks, stock:r2(Object.values(stocks).reduce((a,b)=>a+b,0)), stockMin:parseFloat($('#p_min').value)||0 };
+  if(id){ Object.assign(produitById(id), o); }
+  else { o.id = uid(); DB.produits.push(o); }
+  saveDB(); closeModal(); render(); toast('Produit enregistré ✓');
+}
+function delProduit(id){
+  if(!confirm('Supprimer ce produit ? (les documents existants conservent leurs lignes)')) return;
+  DB.produits = DB.produits.filter(p=>p.id!==id);
+  saveDB(); render(); toast('Produit supprimé');
+}
+function mvtStock(id){
+  const p = produitById(id);
+  const depOpts = DB.depots.map(dp=>`<option value="${dp.id}">${esc(dp.nom)}</option>`).join('');
+  openModal('Mouvement de stock — ' + p.designation, `
+    <div class="grid2">
+      <div class="field"><label>Type de mouvement</label>
+        <select id="m_type" onchange="$('#m_dest_wrap').style.display = this.value==='tr' ? '' : 'none'">
+          <option value="in">Entrée (réception, achat)</option>
+          <option value="out">Sortie (perte, casse…)</option>
+          ${DB.depots.length>1?'<option value="tr">Transfert entre dépôts</option>':''}
+        </select></div>
+      <div class="field"><label>Quantité</label><input id="m_qte" type="number" step="0.01" min="0" value="1"></div>
+      <div class="field"><label>Dépôt ${DB.depots.length>1?'(source)':''}</label><select id="m_dep">${depOpts}</select></div>
+      <div class="field" id="m_dest_wrap" style="display:none"><label>Dépôt de destination</label><select id="m_dest">${depOpts}</select></div>
+    </div>
+    <p style="margin-top:12px; font-size:.85rem; color:var(--muted)">Stock total : <b>${fmt(p.stock)} ${esc(p.unite||'')}</b>. Les factures sortent du stock, les avoirs et réceptions de commandes y entrent.</p>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveMvt('${id}')">Valider</button>`);
+}
+function saveMvt(id){
+  const p = produitById(id);
+  const q = parseFloat($('#m_qte').value)||0;
+  if(q <= 0) return toast('Quantité invalide.', true);
+  const type = $('#m_type').value, dep = $('#m_dep').value;
+  if(type==='tr'){
+    const dest = $('#m_dest').value;
+    if(dest===dep) return toast('Choisissez deux dépôts différents.', true);
+    setStock(p, dep, -q); setStock(p, dest, +q);
+  } else {
+    setStock(p, dep, type==='in' ? q : -q);
+  }
+  saveDB(); closeModal(); render(); toast('Stock mis à jour ✓');
+}
+
+/* ---------- Documents commerciaux (7 types) ---------- */
+const DOCLBL = {
+  devis:{s:'devis', p:'Devis'},
+  proformas:{s:'facture proforma', p:'Factures proforma'},
+  factures:{s:'facture', p:'Factures'},
+  avoirs:{s:'facture d\u2019avoir', p:'Avoirs (factures d\u2019avoir)'},
+  bl:{s:'bon de livraison', p:'Bons de livraison'},
+  bc:{s:'bon de commande fournisseur', p:'Bons de commande fournisseur'},
+  fachats:{s:'facture d\u2019achat', p:'Factures d\u2019achat (fournisseurs)'},
+  commandes:{s:'bon de commande client', p:'Commandes clients'},
+  retours:{s:'bon de retour client', p:'Retours clients'},
+  retoursF:{s:'bon de retour fournisseur', p:'Retours fournisseurs'}
+};
+const isAchat = t => t==='bc' || t==='fachats' || t==='retoursF';
+const docTiersNom = (type,d) => (isAchat(type) ? fournisseurById(d.clientId) : clientById(d.clientId))?.nom || '—';
+let filtreDoc = '', filtreStatut = '';
+
+function badgeDoc(type, d){
+  if(type==='factures'){ const s = statutFacture(d); return `<span class="badge ${s.cls}">${s.lbl}</span>`; }
+  if(type==='fachats'){ const s = statutFachat(d); return `<span class="badge ${s.cls}">${s.lbl}</span>`; }
+  if(type==='devis'){ const cls = {'en attente':'b-amber','accepté':'b-green','refusé':'b-red','facturé':'b-blue'}[d.statut]||'b-gray'; return `<span class="badge ${cls}">${esc(d.statut||'—')}</span>`; }
+  if(type==='proformas') return d.statut==='facturé' ? '<span class="badge b-blue">facturée</span>' : '<span class="badge b-gray">proforma</span>';
+  if(type==='avoirs') return '<span class="badge b-red">avoir</span>';
+  if(type==='commandes'){ const cls = {'en cours':'b-amber','livrée':'b-blue','facturée':'b-green','annulée':'b-gray'}[d.statut]||'b-amber'; return `<span class="badge ${cls}">${esc(d.statut||'en cours')}</span>`; }
+  if(type==='retours') return d.statut==='avoir établi' ? '<span class="badge b-blue">avoir établi</span>' : '<span class="badge b-amber">retour client</span>';
+  if(type==='retoursF') return '<span class="badge b-amber">retour fournisseur</span>';
+  if(type==='bc'){ const st = d.statut||'en cours'; const cls = {'en cours':'b-amber','reçue':'b-green','annulée':'b-gray'}[st]||'b-amber'; return `<span class="badge ${cls}">${esc(st)}</span>`; }
+  return '<span class="badge b-blue">livré</span>';
+}
+
+function vDocs(type){
+  const L = DOCLBL[type], achat = isAchat(type);
+  let arr = [...DB[type]].sort((a,b)=> (b.date+b.numero).localeCompare(a.date+a.numero));
+  if(filtreDoc) arr = arr.filter(d => (d.numero+' '+(d.origine||'')+' '+docTiersNom(type,d)).toLowerCase().includes(filtreDoc.toLowerCase()));
+  if(type==='factures' && filtreStatut) arr = arr.filter(f => statutFacture(f).code===filtreStatut);
+  if(type==='fachats' && filtreStatut) arr = arr.filter(f => statutFachat(f).code===filtreStatut);
+  if((type==='devis'||type==='bc'||type==='commandes') && filtreStatut) arr = arr.filter(d => (d.statut||'en cours')===filtreStatut);
+
+  const selStat = opts => `<select onchange="filtreStatut=this.value; render()"><option value="">Tous les statuts</option>
+    ${opts.map(([v,l])=>`<option value="${v}" ${filtreStatut===v?'selected':''}>${l}</option>`).join('')}</select>`;
+  const filtres = type==='factures' ? selStat([['impayee','Impayées'],['partielle','Partielles'],['payee','Soldées']])
+    : type==='fachats' ? selStat([['impayee','À payer'],['partielle','Partielles'],['payee','Payées']])
+    : type==='devis' ? selStat([['en attente','en attente'],['accepté','accepté'],['refusé','refusé'],['facturé','facturé']])
+    : type==='bc' ? selStat([['en cours','en cours'],['reçue','reçue'],['annulée','annulée']])
+    : type==='commandes' ? selStat([['en cours','en cours'],['livrée','livrée'],['facturée','facturée'],['annulée','annulée']])
+    : '';
+
+  return `
+  <div class="page-head"><div><h2>${L.p}</h2><div class="sub">${DB[type].length} document(s)</div></div>
+    <button class="btn btn-primary" onclick="editDoc('${type}')">+ Nouveau document</button></div>
+  <div class="toolbar">
+    <input type="search" placeholder="Rechercher (n°, ${achat?'fournisseur':'client'}, réf.)…" value="${esc(filtreDoc)}" oninput="filtreDoc=this.value; render()">
+    ${filtres}
+  </div>
+  <div class="card">${arr.length ? `
+    <table class="list"><thead><tr>
+      <th>N°</th><th>Date</th><th>${achat?'Fournisseur':'Client'}</th><th class="num">HT</th><th class="num">TTC</th>
+      ${type==='factures'?'<th class="num">Réglé + déductions</th>':''}${type==='fachats'?'<th class="num">Payé</th>':''}<th>Statut</th><th></th></tr></thead><tbody>
+    ${arr.map(d=>{
+      const c = calcDoc(d), st = d.statut||'en cours';
+      let act = `<button class="btn btn-ghost btn-sm" title="Imprimer / PDF" onclick="imprimer('${type}','${d.id}')">🖨</button>`;
+      if((type==='devis'||type==='proformas') && d.statut!=='facturé')
+        act += `<button class="btn btn-ghost btn-sm" title="Transformer en facture" onclick="docVersFacture('${type}','${d.id}')" style="color:var(--green)">→ FAC</button>`;
+      if(type==='commandes' && d.statut!=='facturée' && d.statut!=='annulée')
+        act += `<button class="btn btn-ghost btn-sm" title="Facturer la commande" onclick="docVersFacture('commandes','${d.id}')" style="color:var(--green)">→ FAC</button>
+        <button class="btn btn-ghost btn-sm" title="Générer le bon de livraison" onclick="commandeVersBL('${d.id}')">→ BL</button>`;
+      if(type==='retours' && d.statut!=='avoir établi')
+        act += `<button class="btn btn-ghost btn-sm" title="Établir la facture d'avoir" onclick="retourVersAvoir('${d.id}')" style="color:var(--red)">→ AV</button>`;
+      if(type==='factures')
+        act += `<button class="btn btn-ghost btn-sm" title="Encaisser un règlement" onclick="editReglement('C','${d.id}')" style="color:var(--green)">💰</button>
+        <button class="btn btn-ghost btn-sm" title="Générer le bon de livraison" onclick="factureVersBL('${d.id}')">→ BL</button>
+        <button class="btn btn-ghost btn-sm" title="Créer une facture d'avoir" onclick="factureVersAvoir('${d.id}')" style="color:var(--red)">→ AV</button>`;
+      if(type==='fachats')
+        act += `<button class="btn btn-ghost btn-sm" title="Payer le fournisseur" onclick="editReglement('F','${d.id}')" style="color:var(--green)">💰</button>`;
+      if(type==='bc' && st==='en cours')
+        act += `<button class="btn btn-ghost btn-sm" title="Réceptionner : entrée en stock" onclick="receptionnerBC('${d.id}')" style="color:var(--green)">✓ Réception</button>
+        <button class="btn btn-ghost btn-sm" title="Créer la facture d'achat" onclick="bcVersFachat('${d.id}')">→ ACH</button>`;
+      if(type==='bc' && st==='reçue')
+        act += `<button class="btn btn-ghost btn-sm" title="Créer la facture d'achat" onclick="bcVersFachat('${d.id}')">→ ACH</button>`;
+      act += `<button class="btn btn-ghost btn-sm" title="Modifier" onclick="editDoc('${type}','${d.id}')">✎</button>
+        <button class="btn btn-ghost btn-sm" title="Supprimer" onclick="delDoc('${type}','${d.id}')" style="color:var(--red)">🗑</button>`;
+      return `<tr>
+      <td><b>${esc(d.numero)}</b>${d.origine?`<br><small style="color:var(--muted)">réf. ${esc(d.origine)}</small>`:''}</td>
+      <td>${dfr(d.date)}</td><td>${esc(docTiersNom(type,d))}</td>
+      <td class="num">${fmtDH(c.ht)}</td><td class="num"><b>${fmtDH(c.ttc)}</b></td>
+      ${type==='factures'?`<td class="num">${fmtDH(r2(totalRegle(d.id)+totalAvoirs(d.id)+rasMontant(d)))}</td>`:''}
+      ${type==='fachats'?`<td class="num">${fmtDH(totalRegleF(d.id))}</td>`:''}
+      <td>${badgeDoc(type,d)}</td>
+      <td class="actions">${act}</td></tr>`;}).join('')}
+    </tbody></table>` : `<div class="empty">Aucun document. Créez-en un avec le bouton ci-dessus.</div>`}
+  </div>`;
+}
+
+/* --- Éditeur de document --- */
+let editLignes = [], editType = 'factures';
+function editDoc(type, id){
+  const achat = isAchat(type);
+  const tiers = achat ? DB.fournisseurs : DB.clients;
+  if(!tiers.length){
+    toast(achat ? 'Ajoutez d\u2019abord un fournisseur.' : 'Ajoutez d\u2019abord un client.', true);
+    currentView = achat ? 'fournisseurs' : 'clients'; syncNav(); render(); return;
+  }
+  const d = id ? DB[type].find(x=>x.id===id) : null;
+  if(type==='bc' && d && (d.statut||'en cours')==='reçue')
+    return toast('Cette commande a déjà été réceptionnée (stock mis à jour) : elle n\u2019est plus modifiable.', true);
+  editType = type;
+  const L = DOCLBL[type];
+  editLignes = d ? JSON.parse(JSON.stringify(d.lignes)) : [{produitId:'', designation:'', qte:1, pu:0, remise:0, tva:DB.societe.tvaDefaut ?? 20}];
+  const depSel = `<div class="field"><label>Dépôt</label><select id="d_depot">
+    ${DB.depots.map(dp=>`<option value="${dp.id}" ${(d?.depotId||DB.depots[0].id)===dp.id?'selected':''}>${esc(dp.nom)}</option>`).join('')}</select></div>`;
+  let extra = '';
+  if(type==='devis') extra = `
+    <div class="field"><label>Statut</label><select id="d_statut">
+      ${['en attente','accepté','refusé','facturé'].map(s=>`<option ${d?.statut===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
+  if(type==='bc') extra = `
+    <div class="field"><label>Statut</label><select id="d_statut">
+      ${['en cours','annulée'].map(s=>`<option ${(d?.statut||'en cours')===s?'selected':''}>${s}</option>`).join('')}</select></div>` + depSel;
+  if(type==='factures') extra = `
+    <div class="field"><label>Échéance de paiement</label><input id="d_ech" type="date" value="${d?.echeance||''}"></div>
+    <div class="field"><label>Retenue à la source (%)</label><input id="d_ras" type="number" min="0" max="100" step="0.01" value="${d?.rasTaux||0}"></div>` + depSel;
+  if(type==='fachats') extra = `
+    <div class="field"><label>Échéance de paiement</label><input id="d_ech" type="date" value="${d?.echeance||''}"></div>`;
+  if(type==='avoirs') extra = `
+    <div class="field"><label>Facture d'origine</label><select id="d_origine">
+      <option value="">— aucune —</option>
+      ${DB.factures.map(f=>`<option value="${f.id}" ${d?.origineId===f.id?'selected':''}>${esc(f.numero)} — ${esc(clientById(f.clientId)?.nom||'')}</option>`).join('')}
+    </select></div>` + depSel;
+  if(type==='commandes') extra = `
+    <div class="field"><label>Statut</label><select id="d_statut">
+      ${['en cours','livrée','facturée','annulée'].map(s=>`<option ${(d?.statut||'en cours')===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
+  if(type==='retours') extra = `
+    <div class="field"><label>Facture d'origine</label><select id="d_origine">
+      <option value="">— aucune —</option>
+      ${DB.factures.map(f=>`<option value="${f.id}" ${d?.origineId===f.id?'selected':''}>${esc(f.numero)} — ${esc(clientById(f.clientId)?.nom||'')}</option>`).join('')}
+    </select></div>` + depSel;
+  if(type==='retoursF') extra = depSel;
+  openModal((id?'Modifier':'Nouveau')+' '+L.s + (d?` — ${d.numero}`:''), `
+    <div class="grid3">
+      <div class="field"><label>N° du document</label>
+        <input id="d_num" value="${esc(d?.numero||'')}" placeholder="Automatique (${{devis:'DEV',proformas:'PRO',factures:'FAC',avoirs:'AV',bl:'BL',bc:'BC',fachats:'ACH'}[type]}-${new Date().getFullYear()}-…)"></div>
+      <div class="field"><label>${achat?'Fournisseur':'Client'} <span class="req">*</span></label>
+        <select id="d_client">${tiers.map(c=>`<option value="${c.id}" ${d?.clientId===c.id?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></div>
+      <div class="field"><label>Date</label><input id="d_date" type="date" value="${d?.date||today()}"></div>
+      ${extra}
+    </div>
+    ${type==='bc'?'<p style="margin-top:8px; font-size:.8rem; color:var(--muted)">Prix repris du catalogue = <b>prix d\u2019achat</b>. À la réception, le stock du dépôt choisi sera augmenté.</p>':''}
+    ${type==='fachats'?'<p style="margin-top:8px; font-size:.8rem; color:var(--muted)">La facture d\u2019achat suit la <b>dette fournisseur</b>. Elle ne modifie pas le stock (l\u2019entrée se fait à la réception du bon de commande ou par mouvement manuel).</p>':''}
+    ${type==='avoirs'?'<p style="margin-top:8px; font-size:.8rem; color:var(--muted)">L\u2019avoir <b>réintègre les quantités en stock</b> et vient en déduction du solde de la facture d\u2019origine.</p>':''}
+    ${type==='retours'?'<p style="margin-top:8px; font-size:.8rem; color:var(--muted)">Le retour client <b>réintègre le stock</b> du dépôt choisi. Générez ensuite l\u2019avoir (→ AV) pour créditer le client.</p>':''}
+    ${type==='retoursF'?'<p style="margin-top:8px; font-size:.8rem; color:var(--muted)">Le retour fournisseur <b>sort les quantités du stock</b> du dépôt choisi.</p>':''}
+    <table class="lines"><thead><tr>
+      <th style="width:26%">Produit</th><th>Désignation</th><th style="width:70px">Qté</th>
+      <th style="width:95px">PU HT</th><th style="width:70px">Rem. %</th><th style="width:80px">TVA</th>
+      <th style="width:95px; text-align:right">Total HT</th><th style="width:30px"></th>
+    </tr></thead><tbody id="lignesBody"></tbody></table>
+    <button class="btn btn-sm" style="margin-top:10px" onclick="addLigne()">+ Ajouter une ligne</button>
+    <div class="totaux" id="docTotaux"></div>
+    <div class="field" style="margin-top:12px"><label>Notes (visibles sur le document imprimé)</label>
+      <textarea id="d_notes" rows="2" placeholder="Conditions de paiement, validité, délai de livraison…">${esc(d?.notes||'')}</textarea></div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveDoc('${type}','${id||''}')">Enregistrer</button>`, true);
+  renderLignes();
+}
+function renderLignes(){
+  const tb = $('#lignesBody'); if(!tb) return;
+  tb.innerHTML = editLignes.map((l,i)=>{
+    const brut = (Number(l.qte)||0)*(Number(l.pu)||0);
+    const net = r2(brut - brut*(Number(l.remise)||0)/100);
+    return `<tr>
+    <td><select onchange="pickProduit(${i}, this.value)">
+      <option value="">— libre —</option>
+      ${DB.produits.map(p=>`<option value="${p.id}" ${l.produitId===p.id?'selected':''}>${esc((p.ref?p.ref+' · ':'')+p.designation)}</option>`).join('')}
+    </select></td>
+    <td><input value="${esc(l.designation)}" oninput="editLignes[${i}].designation=this.value"></td>
+    <td><input type="number" step="0.01" min="0" value="${l.qte}" oninput="editLignes[${i}].qte=this.value; majTotaux(${i})"></td>
+    <td><input type="number" step="0.01" min="0" value="${l.pu}" oninput="editLignes[${i}].pu=this.value; majTotaux(${i})"></td>
+    <td><input type="number" step="0.01" min="0" max="100" value="${l.remise||0}" oninput="editLignes[${i}].remise=this.value; majTotaux(${i})"></td>
+    <td><select onchange="editLignes[${i}].tva=this.value; majTotaux(${i})">
+      ${[20,14,10,7,0].map(t=>`<option value="${t}" ${Number(l.tva)===t?'selected':''}>${t}%</option>`).join('')}</select></td>
+    <td class="ln-total" id="lt${i}">${fmt(net)}</td>
+    <td><button class="btn btn-ghost btn-sm" style="color:var(--red)" title="Retirer" onclick="editLignes.splice(${i},1); renderLignes()">×</button></td>
+  </tr>`;}).join('');
+  majTotaux();
+}
+function pickProduit(i, pid){
+  editLignes[i].produitId = pid;
+  const p = produitById(pid);
+  if(p){
+    editLignes[i].designation = p.designation;
+    editLignes[i].pu = isAchat(editType) ? (Number(p.prixAchat)||Number(p.prixVente)||0) : p.prixVente;
+    editLignes[i].tva = p.tva;
+  }
+  renderLignes();
+}
+function addLigne(){
+  editLignes.push({produitId:'', designation:'', qte:1, pu:0, remise:0, tva:DB.societe.tvaDefaut ?? 20});
+  renderLignes();
+}
+function majTotaux(i){
+  if(i!==undefined){
+    const l = editLignes[i];
+    const brut = (Number(l.qte)||0)*(Number(l.pu)||0);
+    const el = $('#lt'+i); if(el) el.textContent = fmt(r2(brut - brut*(Number(l.remise)||0)/100));
+  }
+  const c = calcDoc({lignes:editLignes});
+  const tvaRows = Object.entries(c.tvaMap).filter(([,v])=>v>0)
+    .map(([t,v])=>`<div class="row"><span>TVA ${t} %</span><span>${fmt(v)}</span></div>`).join('');
+  $('#docTotaux').innerHTML = `
+    ${c.remise>0?`<div class="row"><span>Remises accordées</span><span>− ${fmt(c.remise)}</span></div>`:''}
+    <div class="row"><span>Total HT</span><span>${fmt(c.ht)}</span></div>
+    ${tvaRows || '<div class="row"><span>TVA</span><span>0,00</span></div>'}
+    <div class="row grand"><span>Total TTC</span><span>${fmt(c.ttc)} DH</span></div>`;
+}
+
+function saveDoc(type, id){
+  const lignes = editLignes
+    .map(l=>({produitId:l.produitId||'', designation:(l.designation||'').trim(), qte:Number(l.qte)||0, pu:Number(l.pu)||0, remise:Number(l.remise)||0, tva:Number(l.tva)||0}))
+    .filter(l=> l.designation && l.qte>0);
+  if(!lignes.length) return toast('Ajoutez au moins une ligne valide (désignation + quantité).', true);
+  const numSaisi = ($('#d_num')?.value || '').trim();
+  if(numSaisi && DB[type].some(x=>x.numero===numSaisi && x.id!==id))
+    return toast('Ce numéro existe déjà pour un autre document de ce type.', true);
+  const base = { clientId:$('#d_client').value, date:$('#d_date').value||today(), lignes, notes:$('#d_notes').value.trim() };
+  if(numSaisi) base.numero = numSaisi;
+  if(type==='devis' || type==='bc' || type==='commandes') base.statut = $('#d_statut').value;
+  if(type==='factures' || type==='fachats') base.echeance = $('#d_ech').value;
+  if(type==='factures') base.rasTaux = Math.min(100, Math.max(0, parseFloat($('#d_ras').value)||0));
+  if($('#d_depot')) base.depotId = $('#d_depot').value;
+  if(type==='avoirs' || type==='retours'){
+    const of = factureById($('#d_origine').value);
+    base.origineId = of?.id || ''; base.origine = of?.numero || '';
+  }
+  if(id){
+    const d = DB[type].find(x=>x.id===id);
+    if(type==='factures'){ appliquerStock(d.lignes, +1, d.depotId); Object.assign(d, base); appliquerStock(lignes, -1, base.depotId); }
+    else if((type==='avoirs' && !d.sansStock) || type==='retours'){ appliquerStock(d.lignes, -1, d.depotId); Object.assign(d, base); appliquerStock(lignes, +1, base.depotId); }
+    else if(type==='retoursF'){ appliquerStock(d.lignes, +1, d.depotId); Object.assign(d, base); appliquerStock(lignes, -1, base.depotId); }
+    else Object.assign(d, base);
+  } else {
+    base.id = uid();
+    if(!base.numero) base.numero = nextNumero(type);
+    if(type==='bc' && !base.statut) base.statut = 'en cours';
+    DB[type].push(base);
+    if(type==='factures') appliquerStock(lignes, -1, base.depotId);
+    if(type==='avoirs' || type==='retours') appliquerStock(lignes, +1, base.depotId);
+    if(type==='retoursF') appliquerStock(lignes, -1, base.depotId);
+  }
+  saveDB(); closeModal(); render(); toast('Document enregistré ✓');
+}
+function delDoc(type, id){
+  if(type==='factures'){
+    if(DB.reglements.some(r=>r.factureId===id)) return toast('Supprimez d\u2019abord les règlements liés à cette facture.', true);
+    if(DB.avoirs.some(a=>a.origineId===id)) return toast('Un avoir est lié à cette facture : supprimez-le d\u2019abord.', true);
+  }
+  if(type==='fachats' && DB.reglementsF.some(r=>r.factureId===id))
+    return toast('Supprimez d\u2019abord les paiements liés à cette facture d\u2019achat.', true);
+  const d = DB[type].find(x=>x.id===id);
+  const supp = type==='bc' && (d.statut||'en cours')==='reçue'
+    ? 'Cette commande a été réceptionnée : les quantités seront retirées du stock. Supprimer ?'
+    : 'Supprimer ce document définitivement ?';
+  if(!confirm(supp)) return;
+  if(type==='factures') appliquerStock(d.lignes, +1, d.depotId);
+  if((type==='avoirs' && !d.sansStock) || type==='retours') appliquerStock(d.lignes, -1, d.depotId);
+  if(type==='retoursF') appliquerStock(d.lignes, +1, d.depotId);
+  if(type==='bc' && (d.statut||'en cours')==='reçue') appliquerStock(d.lignes, -1, d.depotId);
+  DB[type] = DB[type].filter(x=>x.id!==id);
+  saveDB(); render(); toast('Document supprimé');
+}
+
+/* --- Conversions & réception --- */
+function docVersFacture(srcType, id){
+  const d = DB[srcType].find(x=>x.id===id);
+  if(!confirm('Créer une facture à partir de '+d.numero+' ?')) return;
+  const f = { id:uid(), numero:nextNumero('factures'), date:today(), clientId:d.clientId,
+    lignes:JSON.parse(JSON.stringify(d.lignes)), notes:d.notes||'', echeance:'', rasTaux:0, depotId:DB.depots[0].id, origine:d.numero };
+  DB.factures.push(f); appliquerStock(f.lignes, -1, f.depotId);
+  d.statut = srcType==='commandes' ? 'facturée' : 'facturé';
+  saveDB(); currentView='factures'; syncNav(); render();
+  toast('Facture '+f.numero+' créée ✓');
+}
+function factureVersBL(id){
+  const f = factureById(id);
+  if(!confirm('Générer un bon de livraison pour la facture '+f.numero+' ?')) return;
+  const b = { id:uid(), numero:nextNumero('bl'), date:today(), clientId:f.clientId,
+    lignes:JSON.parse(JSON.stringify(f.lignes)), notes:'', origine:f.numero };
+  DB.bl.push(b);
+  saveDB(); currentView='bl'; syncNav(); render();
+  toast('Bon de livraison '+b.numero+' créé ✓');
+}
+function factureVersAvoir(id){
+  const f = factureById(id);
+  if(!confirm('Créer une facture d\u2019avoir pour '+f.numero+' ?\nL\u2019avoir reprend toutes les lignes (annulation totale) — vous pourrez ensuite le modifier pour un avoir partiel.')) return;
+  const a = { id:uid(), numero:nextNumero('avoirs'), date:today(), clientId:f.clientId,
+    lignes:JSON.parse(JSON.stringify(f.lignes)), notes:'', origine:f.numero, origineId:f.id, depotId:f.depotId||DB.depots[0].id };
+  DB.avoirs.push(a); appliquerStock(a.lignes, +1, a.depotId);
+  saveDB(); currentView='avoirs'; syncNav(); render();
+  toast('Avoir '+a.numero+' créé — stock réintégré ✓');
+}
+function bcVersFachat(id){
+  const b = DB.bc.find(x=>x.id===id);
+  if(!confirm('Créer la facture d\u2019achat correspondant à '+b.numero+' ?')) return;
+  const f = { id:uid(), numero:nextNumero('fachats'), date:today(), clientId:b.clientId,
+    lignes:JSON.parse(JSON.stringify(b.lignes)), notes:'', echeance:'', origine:b.numero };
+  DB.fachats.push(f);
+  saveDB(); currentView='fachats'; syncNav(); render();
+  toast('Facture d\u2019achat '+f.numero+' créée ✓');
+}
+function receptionnerBC(id){
+  const b = DB.bc.find(x=>x.id===id);
+  if(!confirm('Réceptionner la commande '+b.numero+' ?\nLes quantités commandées seront ajoutées au stock du dépôt « '+esc(depotById(b.depotId)?.nom||DB.depots[0].nom)+' ».')) return;
+  appliquerStock(b.lignes, +1, b.depotId);
+  b.statut = 'reçue'; b.dateReception = today();
+  saveDB(); render(); toast('Commande réceptionnée — stock mis à jour ✓');
+}
+function commandeVersBL(id){
+  const cde = DB.commandes.find(x=>x.id===id);
+  if(!confirm('Générer un bon de livraison pour la commande '+cde.numero+' ?')) return;
+  const b = { id:uid(), numero:nextNumero('bl'), date:today(), clientId:cde.clientId,
+    lignes:JSON.parse(JSON.stringify(cde.lignes)), notes:'', origine:cde.numero };
+  DB.bl.push(b);
+  if(cde.statut!=='facturée') cde.statut = 'livrée';
+  saveDB(); currentView='bl'; syncNav(); render();
+  toast('Bon de livraison '+b.numero+' créé ✓');
+}
+function retourVersAvoir(id){
+  const rt = DB.retours.find(x=>x.id===id);
+  if(!confirm('Établir la facture d\u2019avoir correspondant au retour '+rt.numero+' ?\n(Le stock a déjà été réintégré par le bon de retour : l\u2019avoir ne le modifiera pas.)')) return;
+  const a = { id:uid(), numero:nextNumero('avoirs'), date:today(), clientId:rt.clientId,
+    lignes:JSON.parse(JSON.stringify(rt.lignes)), notes:'Avoir sur retour '+rt.numero,
+    origine:rt.origine||rt.numero, origineId:rt.origineId||'', depotId:rt.depotId, sansStock:true };
+  DB.avoirs.push(a);
+  rt.statut = 'avoir établi';
+  saveDB(); currentView='avoirs'; syncNav(); render();
+  toast('Avoir '+a.numero+' établi (sans nouveau mouvement de stock) ✓');
+}
+
+/* ---------- Règlements (encaissements clients / paiements fournisseurs) ---------- */
+let regTab = 'C', filtreReg = '';
+const MODES_SUIVIS = m => /Chèque|Effet/.test(m||'');
+const STATUTS_REG = ['en portefeuille','remis en banque','encaissé','impayé'];
+
+function vReglements(){
+  const isC = regTab==='C';
+  const arrSrc = isC ? DB.reglements : DB.reglementsF;
+  const docOf = r => isC ? factureById(r.factureId) : fachatById(r.factureId);
+  const tiersOf = r => { const f = docOf(r); return (isC ? clientById(f?.clientId) : fournisseurById(f?.clientId))?.nom || '—'; };
+  let arr = [...arrSrc].sort((a,b)=> b.date.localeCompare(a.date));
+  if(filtreReg) arr = arr.filter(r=> ((docOf(r)?.numero||'')+' '+tiersOf(r)+' '+(r.reference||'')).toLowerCase().includes(filtreReg.toLowerCase()));
+  const moisCour = today().slice(0,7);
+  const totalMois = arrSrc.filter(r=> r.date.slice(0,7)===moisCour && r.statut!=='impayé').reduce((a,r)=>a+Number(r.montant||0),0);
+  const portefeuille = arrSrc.filter(r=> MODES_SUIVIS(r.mode) && ['en portefeuille','remis en banque'].includes(r.statut||'')).reduce((a,r)=>a+Number(r.montant||0),0);
+  return `
+  <div class="page-head"><div><h2>Règlements</h2><div class="sub">Trésorerie : encaissements clients et paiements fournisseurs</div></div>
+    <button class="btn btn-primary" onclick="editReglement('${regTab}')">+ ${isC?'Encaisser (client)':'Payer (fournisseur)'}</button></div>
+  <div class="tabs">
+    <button class="${isC?'active':''}" onclick="regTab='C'; render()">Encaissements clients</button>
+    <button class="${!isC?'active':''}" onclick="regTab='F'; render()">Paiements fournisseurs</button>
+  </div>
+  <div class="chips">
+    <div class="chip">${isC?'Encaissé':'Payé'} ce mois<b style="color:var(--green)">${fmtDH(totalMois)}</b></div>
+    <div class="chip">Chèques &amp; effets en portefeuille / en banque<b style="color:var(--blue)">${fmtDH(portefeuille)}</b></div>
+  </div>
+  <div class="toolbar"><input type="search" placeholder="Rechercher (n° document, ${isC?'client':'fournisseur'}, référence)…" value="${esc(filtreReg)}" oninput="filtreReg=this.value; render()"></div>
+  <div class="card">${arr.length ? `
+    <table class="list"><thead><tr><th>Date</th><th>${isC?'Facture':'Facture d\u2019achat'}</th><th>${isC?'Client':'Fournisseur'}</th><th>Mode</th><th>Référence</th><th>Suivi chèque / effet</th><th class="num">Montant</th><th></th></tr></thead><tbody>
+    ${arr.map(r=>{
+      const f = docOf(r);
+      const impaye = r.statut==='impayé';
+      const suivi = MODES_SUIVIS(r.mode)
+        ? `<select onchange="setStatutReg('${regTab}','${r.id}',this.value)" style="padding:4px 8px; border:1px solid var(--line); border-radius:6px; font-size:.8rem; ${impaye?'color:var(--red); font-weight:700':''}">
+            ${STATUTS_REG.map(s=>`<option ${(r.statut||'en portefeuille')===s?'selected':''}>${s}</option>`).join('')}</select>`
+        : '<span style="color:var(--muted)">—</span>';
+      return `<tr>
+      <td>${dfr(r.date)}</td><td><b>${esc(f?.numero||'—')}</b></td><td>${esc(tiersOf(r))}</td>
+      <td><span class="badge b-blue">${esc(r.mode)}</span></td><td>${esc(r.reference||'—')}</td>
+      <td>${suivi}</td>
+      <td class="num" style="color:${impaye?'var(--red)':'var(--green)'}; font-weight:700; ${impaye?'text-decoration:line-through':''}">${fmtDH(r.montant)}</td>
+      <td class="actions">${regTab==='C'?`<button class="btn btn-ghost btn-sm" title="Imprimer le reçu de paiement" onclick="imprimerRecu('${r.id}')">🧾</button>`:''}${regTab==='C' && /Effet/.test(r.mode||'')?`<button class="btn btn-ghost btn-sm" title="Imprimer la lettre de change (LCN)" onclick="imprimerTraite('${r.id}')">📜</button>`:''}<button class="btn btn-ghost btn-sm" title="Supprimer" onclick="delReglement('${regTab}','${r.id}')" style="color:var(--red)">🗑</button></td>
+      </tr>`;}).join('')}
+    </tbody></table>` : `<div class="empty">Aucun ${isC?'encaissement':'paiement'} enregistré.</div>`}
+  </div>`;
+}
+function setStatutReg(tab, id, val){
+  const arr = tab==='C' ? DB.reglements : DB.reglementsF;
+  const r = arr.find(x=>x.id===id); if(!r) return;
+  r.statut = val;
+  saveDB(); render();
+  toast(val==='impayé' ? '⚠ Règlement marqué impayé : le document redevient dû.' : 'Suivi mis à jour ✓', val==='impayé');
+}
+function editReglement(tab, factureId){
+  const isC = tab==='C';
+  const src = isC ? DB.factures : DB.fachats;
+  const reste = isC ? resteFacture : resteFachat;
+  const nomDe = f => (isC ? clientById(f.clientId) : fournisseurById(f.clientId))?.nom || '';
+  const nonSoldees = src.filter(f=> reste(f) > 0.004);
+  if(!nonSoldees.length && !factureId) return toast(isC?'Toutes les factures clients sont soldées 🎉':'Toutes les factures d\u2019achat sont payées 🎉', true);
+  const fid = factureId || nonSoldees[0]?.id;
+  const liste = factureId ? src.filter(f=>f.id===factureId).concat(nonSoldees.filter(f=>f.id!==factureId)) : nonSoldees;
+  const opts = liste.map(f=>{
+    const r = reste(f);
+    return `<option value="${f.id}" data-reste="${r}" ${f.id===fid?'selected':''}>${esc(f.numero)} — ${esc(nomDe(f))} (reste ${fmt(r)} DH)</option>`;
+  }).join('');
+  const doc0 = src.find(f=>f.id===fid);
+  const reste0 = doc0 ? reste(doc0) : 0;
+  openModal(isC?'Encaisser un règlement client':'Payer un fournisseur', `
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1"><label>${isC?'Facture':'Facture d\u2019achat'} <span class="req">*</span></label>
+        <select id="r_fac" onchange="$('#r_mnt').value=this.selectedOptions[0].dataset.reste">${opts}</select></div>
+      <div class="field"><label>Date</label><input id="r_date" type="date" value="${today()}"></div>
+      <div class="field"><label>Montant (DH) <span class="req">*</span></label><input id="r_mnt" type="number" step="0.01" min="0" value="${Math.max(reste0,0)}"></div>
+      <div class="field"><label>Mode de paiement</label>
+        <select id="r_mode" onchange="autoCompte(this.value)">${['Espèces','Chèque','Virement','Effet (LCN)','Carte bancaire','Prélèvement','Compensation','Autre'].map(m=>`<option>${m}</option>`).join('')}</select></div>
+      <div class="field"><label>Référence (n° chèque, virement…)</label><input id="r_ref"></div>
+      <div class="field"><label>Compte de trésorerie</label>
+        <select id="r_cpt">${DB.comptes.map(c=>`<option value="${c.id}" ${c.type==='caisse'?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></div>
+      <div class="field"><label>Échéance (chèque / effet)</label><input id="r_ech" type="date"></div>
+    </div>
+    <p style="margin-top:10px; font-size:.8rem; color:var(--muted)">Les chèques et effets sont créés « en portefeuille » : suivez leur encaissement dans l\u2019onglet Règlements.</p>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveReglement('${tab}')">${isC?'Encaisser':'Payer'}</button>`);
+}
+function saveReglement(tab){
+  const m = parseFloat($('#r_mnt').value);
+  if(isNaN(m) || m <= 0) return toast('Montant invalide.', true);
+  const mode = $('#r_mode').value;
+  const o = { id:uid(), factureId:$('#r_fac').value, date:$('#r_date').value||today(),
+    montant:r2(m), mode, reference:$('#r_ref').value.trim(),
+    compteId:$('#r_cpt').value, echeance:$('#r_ech').value };
+  if(MODES_SUIVIS(mode)) o.statut = 'en portefeuille';
+  if(tab==='C') o.recu = nextNumero('recus');
+  (tab==='C' ? DB.reglements : DB.reglementsF).push(o);
+  saveDB(); closeModal(); render(); toast(tab==='C'?'Règlement encaissé ✓':'Paiement enregistré ✓');
+}
+function delReglement(tab, id){
+  if(!confirm('Supprimer ce règlement ?')) return;
+  if(tab==='C') DB.reglements = DB.reglements.filter(r=>r.id!==id);
+  else DB.reglementsF = DB.reglementsF.filter(r=>r.id!==id);
+  saveDB(); render(); toast('Règlement supprimé');
+}
+
+/* ---------- Échéancier & relances ---------- */
+function bucketRetard(retard){
+  if(retard <= 0) return {lbl:'À échoir', cls:'b-blue', k:'a'};
+  if(retard <= 30) return {lbl:'1–30 j', cls:'b-amber', k:'b'};
+  if(retard <= 60) return {lbl:'31–60 j', cls:'b-amber', k:'c'};
+  if(retard <= 90) return {lbl:'61–90 j', cls:'b-red', k:'d'};
+  return {lbl:'+90 j', cls:'b-red', k:'e'};
+}
+function vEcheancier(){
+  const now = new Date(today());
+  const bloc = (src, reste, nomDe, isC) => {
+    const rows = src.filter(f=> reste(f) > 0.004)
+      .map(f=>{
+        const ech = f.echeance || f.date;
+        const retard = Math.floor((now - new Date(ech)) / 864e5);
+        return {f, ech, retard, r:reste(f), b:bucketRetard(retard)};
+      }).sort((a,b)=> b.retard - a.retard);
+    const tot = {a:0,b:0,c:0,d:0,e:0};
+    rows.forEach(x=> tot[x.b.k] += x.r);
+    const chips = `
+    <div class="chips">
+      <div class="chip">À échoir<b>${fmtDH(tot.a)}</b></div>
+      <div class="chip">1–30 j<b style="color:#9A6410">${fmtDH(tot.b)}</b></div>
+      <div class="chip">31–60 j<b style="color:#9A6410">${fmtDH(tot.c)}</b></div>
+      <div class="chip">61–90 j<b style="color:var(--red)">${fmtDH(tot.d)}</b></div>
+      <div class="chip">+90 j<b style="color:var(--red)">${fmtDH(tot.e)}</b></div>
+      <div class="chip">Total<b>${fmtDH(rows.reduce((a,x)=>a+x.r,0))}</b></div>
+    </div>`;
+    const table = rows.length ? `
+    <table class="list"><thead><tr><th>N°</th><th>${isC?'Client':'Fournisseur'}</th><th>Date</th><th>Échéance</th>
+      <th class="num">TTC</th><th class="num">Reste</th><th>Retard</th><th></th></tr></thead><tbody>
+    ${rows.map(x=>`<tr>
+      <td><b>${esc(x.f.numero)}</b></td><td>${esc(nomDe(x.f))}</td>
+      <td>${dfr(x.f.date)}</td><td>${x.f.echeance?dfr(x.f.echeance):'<span style="color:var(--muted)">non fixée</span>'}</td>
+      <td class="num">${fmtDH(calcDoc(x.f).ttc)}</td>
+      <td class="num" style="font-weight:700; color:var(--red)">${fmtDH(x.r)}</td>
+      <td><span class="badge ${x.b.cls}">${x.b.lbl}${x.retard>0?' ('+x.retard+' j)':''}</span></td>
+      <td class="actions">
+        ${isC?`<button class="btn btn-ghost btn-sm" title="Lettre de relance graduée" onclick="openRelance('${x.f.clientId}')">📨</button>
+        <button class="btn btn-ghost btn-sm" title="Relevé de compte" onclick="imprimerReleve('${x.f.clientId}')">📄</button>
+        <button class="btn btn-ghost btn-sm" title="Encaisser" onclick="editReglement('C','${x.f.id}')" style="color:var(--green)">💰</button>`
+        :`<button class="btn btn-ghost btn-sm" title="Payer" onclick="editReglement('F','${x.f.id}')" style="color:var(--green)">💰</button>`}
+        <button class="btn btn-ghost btn-sm" title="Imprimer" onclick="imprimer('${isC?'factures':'fachats'}','${x.f.id}')">🖨</button>
+      </td></tr>`).join('')}
+    </tbody></table>` : '<div class="empty">Rien en attente 🎉</div>';
+    return chips + '<div class="card">' + table + '</div>';
+  };
+  return `
+  <div class="page-head"><div><h2>Échéancier &amp; relances</h2><div class="sub">Balance âgée des créances clients et dettes fournisseurs</div></div></div>
+  <h3 style="margin:4px 0 10px">À encaisser — clients</h3>
+  ${bloc(DB.factures, resteFacture, f=>clientById(f.clientId)?.nom||'—', true)}
+  <h3 style="margin:22px 0 10px">À payer — fournisseurs</h3>
+  ${bloc(DB.fachats, resteFachat, f=>fournisseurById(f.clientId)?.nom||'—', false)}`;
+}
+
+/* ---------- Rapports & journaux ---------- */
+let rapTab='jventes', rapAn=new Date().getFullYear(), rapMois='';
+function anneesDispo(){
+  const s = new Set([new Date().getFullYear()]);
+  ['factures','avoirs','fachats'].forEach(t=> DB[t].forEach(d=> s.add(new Date(d.date).getFullYear())));
+  return [...s].sort((a,b)=>b-a);
+}
+function inPeriode(dateStr){
+  const d = new Date(dateStr);
+  return d.getFullYear()===Number(rapAn) && (rapMois==='' || d.getMonth()===Number(rapMois));
+}
+function journalRows(kind){
+  const src = kind==='ventes'
+    ? [{arr:DB.factures, s:1, t:'C'}, {arr:DB.avoirs, s:-1, t:'C'}]
+    : [{arr:DB.fachats, s:1, t:'F'}];
+  const rows = [];
+  src.forEach(({arr,s,t})=> arr.forEach(d=>{
+    if(!inPeriode(d.date)) return;
+    const c = calcDoc(d);
+    const tiers = (t==='C' ? clientById(d.clientId) : fournisseurById(d.clientId)) || {};
+    const tv = {}; [20,14,10,7].forEach(x=> tv[x] = r2(s*(c.tvaMap[x]||0)));
+    rows.push({date:d.date, num:d.numero, tiers:tiers.nom||'—', ice:tiers.ice||'', ht:r2(s*c.ht), tv, tva:r2(s*c.tva), ttc:r2(s*c.ttc)});
+  }));
+  return rows.sort((a,b)=> a.date.localeCompare(b.date));
+}
+function vRapports(){
+  const anOpts = anneesDispo().map(a=>`<option ${Number(rapAn)===a?'selected':''}>${a}</option>`).join('');
+  const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const moisOpts = `<option value="">Année entière</option>` + moisNoms.map((m,i)=>`<option value="${i}" ${rapMois!==''&&Number(rapMois)===i?'selected':''}>${m}</option>`).join('');
+  const periode = `
+    <select onchange="rapAn=this.value; render()">${anOpts}</select>
+    <select onchange="rapMois=this.value; render()">${moisOpts}</select>`;
+  let corps = '';
+
+  if(rapTab==='jventes' || rapTab==='jachats'){
+    const kind = rapTab==='jventes' ? 'ventes' : 'achats';
+    const rows = journalRows(kind);
+    const tot = rows.reduce((a,r)=>{ a.ht+=r.ht; a.tva+=r.tva; a.ttc+=r.ttc; [20,14,10,7].forEach(x=>a.tv[x]+=r.tv[x]); return a; },
+      {ht:0,tva:0,ttc:0,tv:{20:0,14:0,10:0,7:0}});
+    corps = `
+    <div class="toolbar">${periode}
+      <button class="btn btn-accent" onclick="exportJournal('${kind}')">⬇ Exporter CSV (Excel)</button></div>
+    <div class="card">${rows.length ? `
+      <table class="list"><thead><tr><th>Date</th><th>N°</th><th>${kind==='ventes'?'Client':'Fournisseur'}</th><th>ICE</th>
+        <th class="num">HT</th><th class="num">TVA 20%</th><th class="num">TVA 14%</th><th class="num">TVA 10%</th><th class="num">TVA 7%</th><th class="num">TVA</th><th class="num">TTC</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${dfr(r.date)}</td><td><b>${esc(r.num)}</b></td><td>${esc(r.tiers)}</td><td>${esc(r.ice)}</td>
+        <td class="num">${fmt(r.ht)}</td><td class="num">${fmt(r.tv[20])}</td><td class="num">${fmt(r.tv[14])}</td>
+        <td class="num">${fmt(r.tv[10])}</td><td class="num">${fmt(r.tv[7])}</td><td class="num">${fmt(r.tva)}</td>
+        <td class="num"><b>${fmt(r.ttc)}</b></td></tr>`).join('')}
+      <tr style="background:#F4F7F6; font-weight:800"><td colspan="4">TOTAUX</td>
+        <td class="num">${fmt(tot.ht)}</td><td class="num">${fmt(tot.tv[20])}</td><td class="num">${fmt(tot.tv[14])}</td>
+        <td class="num">${fmt(tot.tv[10])}</td><td class="num">${fmt(tot.tv[7])}</td><td class="num">${fmt(tot.tva)}</td>
+        <td class="num">${fmt(tot.ttc)}</td></tr>
+      </tbody></table>` : '<div class="empty">Aucune écriture sur la période. Les avoirs apparaissent en négatif dans le journal des ventes.</div>'}
+    </div>`;
+  }
+
+  if(rapTab==='marges'){
+    const agg = {};
+    [{arr:DB.factures, s:1},{arr:DB.avoirs, s:-1}].forEach(({arr,s})=> arr.forEach(d=>{
+      if(!inPeriode(d.date)) return;
+      d.lignes.forEach(l=>{
+        const key = l.produitId || '_libre';
+        if(!agg[key]) agg[key] = {qte:0, ca:0};
+        const brut = (Number(l.qte)||0)*(Number(l.pu)||0);
+        agg[key].qte += s*(Number(l.qte)||0);
+        agg[key].ca  += s*r2(brut - brut*(Number(l.remise)||0)/100);
+      });
+    }));
+    const lignes = Object.entries(agg).map(([pid,v])=>{
+      const p = produitById(pid);
+      const cout = p ? r2(v.qte*(Number(p.prixAchat)||0)) : 0;
+      const marge = r2(v.ca - cout);
+      return {nom: p ? (p.ref?p.ref+' · ':'')+p.designation : '(lignes libres)', qte:v.qte, ca:r2(v.ca), cout, marge,
+        taux: v.ca ? r2(marge/v.ca*100) : 0};
+    }).sort((a,b)=> b.ca - a.ca);
+    const clientsAgg = {};
+    [{arr:DB.factures, s:1},{arr:DB.avoirs, s:-1}].forEach(({arr,s})=> arr.forEach(d=>{
+      if(!inPeriode(d.date)) return;
+      clientsAgg[d.clientId] = r2((clientsAgg[d.clientId]||0) + s*calcDoc(d).ttc);
+    }));
+    const topClients = Object.entries(clientsAgg).map(([id,ca])=>({nom:clientById(id)?.nom||'—', ca})).sort((a,b)=>b.ca-a.ca).slice(0,10);
+    corps = `
+    <div class="toolbar">${periode}</div>
+    <div class="dash-grid">
+      <div class="card card-pad"><h3>Marge par produit (ventes nettes d'avoirs)</h3>
+        ${lignes.length?`<table class="list"><thead><tr><th>Produit</th><th class="num">Qté</th><th class="num">CA HT</th><th class="num">Coût (PA)</th><th class="num">Marge</th><th class="num">%</th></tr></thead><tbody>
+        ${lignes.map(l=>`<tr><td>${esc(l.nom)}</td><td class="num">${fmt(l.qte)}</td><td class="num">${fmt(l.ca)}</td>
+          <td class="num">${fmt(l.cout)}</td><td class="num" style="font-weight:700; color:${l.marge>=0?'var(--green)':'var(--red)'}">${fmt(l.marge)}</td>
+          <td class="num">${fmt(l.taux)} %</td></tr>`).join('')}
+        </tbody></table>`:'<div class="empty">Aucune vente sur la période.</div>'}
+      </div>
+      <div class="card card-pad"><h3>Top clients (CA TTC net)</h3>
+        ${topClients.length?`<table class="list"><tbody>
+        ${topClients.map((c,i)=>`<tr><td>${i+1}. <b>${esc(c.nom)}</b></td><td class="num">${fmtDH(c.ca)}</td></tr>`).join('')}
+        </tbody></table>`:'<div class="empty">Aucune vente sur la période.</div>'}
+      </div>
+    </div>`;
+  }
+
+  if(rapTab==='ca'){
+    const anN = Number(rapAn), anP = anN-1;
+    const serie = an => {
+      const m = Array(12).fill(0);
+      DB.factures.forEach(f=>{ const d=new Date(f.date); if(d.getFullYear()===an) m[d.getMonth()] += calcDoc(f).ttc; });
+      DB.avoirs.forEach(a=>{ const d=new Date(a.date); if(d.getFullYear()===an) m[d.getMonth()] -= calcDoc(a).ttc; });
+      return m.map(r2);
+    };
+    const sN = serie(anN), sP = serie(anP);
+    const moisN = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    corps = `
+    <div class="toolbar"><select onchange="rapAn=this.value; render()">${anOpts}</select></div>
+    <div class="card">
+      <table class="list"><thead><tr><th>Mois</th><th class="num">${anP}</th><th class="num">${anN}</th><th class="num">Évolution</th></tr></thead><tbody>
+      ${moisN.map((m,i)=>{
+        const ev = sP[i] ? r2((sN[i]-sP[i])/sP[i]*100) : (sN[i]?100:0);
+        return `<tr><td>${m}</td><td class="num">${fmt(sP[i])}</td><td class="num"><b>${fmt(sN[i])}</b></td>
+        <td class="num" style="font-weight:700; color:${ev>=0?'var(--green)':'var(--red)'}">${ev>=0?'+':''}${fmt(ev)} %</td></tr>`;}).join('')}
+      <tr style="background:#F4F7F6; font-weight:800"><td>TOTAL</td><td class="num">${fmt(sP.reduce((a,b)=>a+b,0))}</td>
+        <td class="num">${fmt(sN.reduce((a,b)=>a+b,0))}</td><td></td></tr>
+      </tbody></table>
+    </div>`;
+  }
+
+  if(rapTab==='resultat'){
+    const anN = Number(rapAn);
+    const vHT = Array(12).fill(0), aHT = Array(12).fill(0), chg = Array(12).fill(0);
+    DB.factures.forEach(f=>{ const d=new Date(f.date); if(d.getFullYear()===anN) vHT[d.getMonth()] += calcDoc(f).ht; });
+    DB.avoirs.forEach(a=>{ const d=new Date(a.date); if(d.getFullYear()===anN) vHT[d.getMonth()] -= calcDoc(a).ht; });
+    DB.fachats.forEach(f=>{ const d=new Date(f.date); if(d.getFullYear()===anN) aHT[d.getMonth()] += calcDoc(f).ht; });
+    DB.charges.forEach(c=>{ const d=new Date(c.date); if(d.getFullYear()===anN) chg[d.getMonth()] += Number(c.montant)||0; });
+    const moisNoms2 = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    let cum = 0;
+    corps = `
+    <div class="toolbar"><select onchange="rapAn=this.value; render()">${anOpts}</select></div>
+    <div class="card">
+      <table class="list"><thead><tr><th>Mois</th><th class="num">Ventes HT (nettes)</th><th class="num">Achats HT</th>
+        <th class="num">Charges</th><th class="num">Résultat</th><th class="num">Cumul</th></tr></thead><tbody>
+      ${moisNoms2.map((m,i)=>{
+        const res = r2(vHT[i]-aHT[i]-chg[i]); cum = r2(cum+res);
+        return `<tr><td>${m}</td><td class="num">${fmt(vHT[i])}</td><td class="num">${fmt(aHT[i])}</td>
+        <td class="num">${fmt(chg[i])}</td>
+        <td class="num" style="font-weight:700; color:${res>=0?'var(--green)':'var(--red)'}">${fmt(res)}</td>
+        <td class="num" style="color:${cum>=0?'var(--green)':'var(--red)'}">${fmt(cum)}</td></tr>`;}).join('')}
+      <tr style="background:#F4F7F6; font-weight:800"><td>TOTAL ${anN}</td>
+        <td class="num">${fmt(vHT.reduce((a,b)=>a+b,0))}</td><td class="num">${fmt(aHT.reduce((a,b)=>a+b,0))}</td>
+        <td class="num">${fmt(chg.reduce((a,b)=>a+b,0))}</td>
+        <td class="num" colspan="2" style="color:${cum>=0?'var(--green)':'var(--red)'}">${fmt(cum)}</td></tr>
+      </tbody></table>
+      <p style="padding:12px; font-size:.8rem; color:var(--muted)">Estimation de gestion (ventes HT nettes d'avoirs − achats HT − charges). Ne remplace pas la comptabilité officielle (amortissements, variations de stock…).</p>
+    </div>`;
+  }
+
+  if(rapTab==='tva'){
+    const jv = journalRows('ventes'), ja = journalRows('achats');
+    const coll = {20:0,14:0,10:0,7:0}, ded = {20:0,14:0,10:0,7:0};
+    jv.forEach(r=> [20,14,10,7].forEach(x=> coll[x] = r2(coll[x]+r.tv[x])));
+    ja.forEach(r=> [20,14,10,7].forEach(x=> ded[x] = r2(ded[x]+r.tv[x])));
+    const tColl = r2(Object.values(coll).reduce((a,b)=>a+b,0));
+    const tDed = r2(Object.values(ded).reduce((a,b)=>a+b,0));
+    const due = r2(tColl - tDed);
+    corps = `
+    <div class="toolbar">${periode}</div>
+    <div class="card" style="max-width:720px">
+      <table class="list"><thead><tr><th>Taux</th><th class="num">TVA collectée (ventes)</th><th class="num">TVA déductible (achats)</th><th class="num">Différence</th></tr></thead><tbody>
+      ${[20,14,10,7].map(x=>`<tr><td><b>${x} %</b></td><td class="num">${fmt(coll[x])}</td><td class="num">${fmt(ded[x])}</td>
+        <td class="num">${fmt(r2(coll[x]-ded[x]))}</td></tr>`).join('')}
+      <tr style="background:#F4F7F6; font-weight:800"><td>TOTAL</td><td class="num">${fmt(tColl)}</td><td class="num">${fmt(tDed)}</td>
+        <td class="num" style="color:${due>=0?'var(--red)':'var(--green)'}">${fmt(due)}</td></tr>
+      </tbody></table>
+      <div style="padding:14px 16px">
+        <div class="chip" style="display:inline-block">${due>=0?'TVA due au Trésor sur la période':'Crédit de TVA sur la période'}
+          <b style="color:${due>=0?'var(--red)':'var(--green)'}; font-size:1.2rem">${fmt(Math.abs(due))} DH</b></div>
+        <p style="font-size:.8rem; color:var(--muted); margin-top:10px">Préparation basée sur les factures émises et reçues (régime des débits). Ne prend pas en compte le crédit reporté, le prorata ni la TVA sur charges non saisies en factures d'achat. À valider avec votre comptable avant télédéclaration (SIMPL-TVA).</p>
+      </div>
+    </div>`;
+  }
+
+  return `
+  <div class="page-head"><div><h2>Rapports</h2><div class="sub">Journaux comptables, marges, résultat et TVA — CA net des avoirs</div></div></div>
+  <div class="tabs">
+    <button class="${rapTab==='jventes'?'active':''}" onclick="rapTab='jventes'; render()">Journal des ventes</button>
+    <button class="${rapTab==='jachats'?'active':''}" onclick="rapTab='jachats'; render()">Journal des achats</button>
+    <button class="${rapTab==='marges'?'active':''}" onclick="rapTab='marges'; render()">Marges &amp; tops</button>
+    <button class="${rapTab==='ca'?'active':''}" onclick="rapTab='ca'; render()">CA comparé N / N-1</button>
+    <button class="${rapTab==='resultat'?'active':''}" onclick="rapTab='resultat'; render()">Résultat mensuel</button>
+    <button class="${rapTab==='tva'?'active':''}" onclick="rapTab='tva'; render()">Déclaration TVA</button>
+  </div>
+  ${corps}`;
+}
+function exportJournal(kind){
+  const rows = journalRows(kind);
+  if(!rows.length) return toast('Aucune écriture à exporter sur la période.', true);
+  const num = v => (Number(v)||0).toFixed(2).replace('.', ',');
+  const q = s => '"' + String(s??'').replace(/"/g,'""') + '"';
+  const head = ['Date','Numéro', kind==='ventes'?'Client':'Fournisseur','ICE','Total HT','TVA 20%','TVA 14%','TVA 10%','TVA 7%','Total TVA','Total TTC'];
+  const lines = [head.join(';')];
+  const tot = {ht:0,tva:0,ttc:0,tv:{20:0,14:0,10:0,7:0}};
+  rows.forEach(r=>{
+    lines.push([dfr(r.date), q(r.num), q(r.tiers), q(r.ice), num(r.ht), num(r.tv[20]), num(r.tv[14]), num(r.tv[10]), num(r.tv[7]), num(r.tva), num(r.ttc)].join(';'));
+    tot.ht+=r.ht; tot.tva+=r.tva; tot.ttc+=r.ttc; [20,14,10,7].forEach(x=>tot.tv[x]+=r.tv[x]);
+  });
+  lines.push(['','','TOTAUX','', num(tot.ht), num(tot.tv[20]), num(tot.tv[14]), num(tot.tv[10]), num(tot.tv[7]), num(tot.tva), num(tot.ttc)].join(';'));
+  const per = rapMois==='' ? rapAn : rapAn+'-'+String(Number(rapMois)+1).padStart(2,'0');
+  const blob = new Blob(['\ufeff'+lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'journal-'+kind+'-'+per+'.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Journal exporté ✓ (ouvrez-le dans Excel)');
+}
+
+/* ---------- Impression (documents + relevé) ---------- */
+function docStyleAttr(){
+  const st = DB.societe.docStyle || {};
+  return `style="--teal:${esc(st.couleur||'#0C4A46')}; --saffron:${esc(st.accent||'#D9922E')}; font-family:'${esc(st.police||'Segoe UI')}', Arial, sans-serif"`;
+}
+function entetePrint(){
+  const S = DB.societe;
+  return `
+  <div class="soc">
+    ${S.logo?`<img src="${S.logo}" alt="" style="max-height:60px; max-width:220px; margin-bottom:6px; display:block">`:''}
+    <h1>${esc(S.nom)}</h1>
+    ${S.activite?`<p>${esc(S.activite)}</p>`:''}
+    <p>${esc(S.adresse)}${S.ville?', '+esc(S.ville):''}</p>
+    <p>${S.tel?'Tél : '+esc(S.tel):''}${S.email?' — '+esc(S.email):''}</p>
+  </div>`;
+}
+function piedPrint(){
+  const S = DB.societe;
+  const mentions = [
+    S.ice ? 'ICE : '+S.ice : '', S.idf ? 'IF : '+S.idf : '', S.rc ? 'RC : '+S.rc+(S.ville?' ('+S.ville+')':'') : '',
+    S.patente ? 'Patente : '+S.patente : '', S.cnss ? 'CNSS : '+S.cnss : '', S.capital ? 'Capital : '+S.capital+' DH' : ''
+  ].filter(Boolean).join(' — ');
+  return `<div class="doc-foot">${mentions}${S.rib?'<br>RIB : '+esc(S.rib):''}</div>`;
+}
+/* Pagination : découpe les lignes en pages A4, répète l'en-tête et le pied,
+   numérote « Page i / N », réserve la place des totaux/signature en dernière page. */
+function pagesDoc(o){
+  // Capacités réelles d'une page A4 en « unités-ligne » (~30 px chacune)
+  const cap1 = Math.max(6, (o.cap1 ?? 22) - (o.avantCost ?? 0) + (o.metaHtml ? 0 : 3));
+  const capN = o.capN ?? 27;
+  const finCost = o.finHtml ? (o.finCost ?? 13) : 0;
+  const rows = o.rows || [];
+  const chunks = [];
+  let i = 0;
+  while(true){
+    const cap = chunks.length===0 ? cap1 : capN;
+    const restants = rows.length - i;
+    // Tout ce qui reste + le bloc totaux/signature tient sur cette page → on termine ici
+    if(restants + finCost <= cap){ chunks.push(rows.slice(i)); break; }
+    chunks.push(rows.slice(i, i+cap)); i += cap;
+    // Toutes les lignes sont placées mais le bloc final ne tenait pas → page finale dédiée
+    if(i >= rows.length){ chunks.push([]); break; }
+  }
+  const N = chunks.length;
+  return chunks.map((ch, idx)=>`
+  <div class="page">
+    <div class="doc-head">
+      ${entetePrint()}
+      <div class="doc-title"><h2>${o.titre}</h2>${o.sousTitre||''}<p class="pagenum">Page ${idx+1} / ${N}</p></div>
+    </div>
+    ${idx===0 && o.metaHtml ? `<div class="doc-meta">${o.metaHtml}</div>` : ''}
+    ${idx===0 && o.avantHtml ? o.avantHtml : ''}
+    ${ch.length ? `<table class="doc-lines"><thead>${o.theadHtml||''}</thead><tbody>${ch.join('')}</tbody></table>` : ''}
+    ${idx===N-1 ? (o.finHtml||'') : ''}
+    ${piedPrint()}
+  </div>`).join('');
+}
+function imprimer(type, id){
+  const d = DB[type].find(x=>x.id===id);
+  const c = calcDoc(d);
+  const achat = isAchat(type);
+  const cl = (achat ? fournisseurById(d.clientId) : clientById(d.clientId)) || {};
+  const titre = {devis:'Devis', proformas:'Facture proforma', factures:'Facture', avoirs:'Facture d\u2019avoir',
+    bl:'Bon de livraison', bc:'Bon de commande', fachats:'Facture d\u2019achat',
+    commandes:'Bon de commande client', retours:'Bon de retour', retoursF:'Bon de retour fournisseur'}[type];
+  const isBL = type==='bl';
+  const refLbl = type==='avoirs' ? 'Avoir sur facture' : 'Réf.';
+  const blocTiers = achat ? 'Fournisseur' : (isBL ? 'Livré à' : 'Client');
+  const tvaRows = Object.entries(c.tvaMap).filter(([,v])=>v>0)
+    .map(([t,v])=>`<div class="row"><span>TVA ${t} %</span><span>${fmt(v)} DH</span></div>`).join('');
+  const paye = type==='factures' ? totalRegle(d.id) : type==='fachats' ? totalRegleF(d.id) : 0;
+  const avoirs = type==='factures' ? totalAvoirs(d.id) : 0;
+  const ras = type==='factures' ? rasMontant(d) : 0;
+  const reste = type==='factures' ? resteFacture(d) : type==='fachats' ? resteFachat(d) : 0;
+  const rows = d.lignes.map((l,i2)=>{
+    const brut = (Number(l.qte)||0)*(Number(l.pu)||0);
+    const net = r2(brut - brut*(Number(l.remise)||0)/100);
+    const p = produitById(l.produitId);
+    return `<tr>
+      <td>${i2+1}</td>
+      <td>${esc((p?.ref? p.ref+' — ':'') + l.designation)}</td>
+      <td class="num">${fmt(l.qte)}${p?.unite? ' '+esc(p.unite):''}</td>
+      ${isBL?'':`<td class="num">${fmt(l.pu)}</td>
+      <td class="num">${l.remise?fmt(l.remise)+' %':'—'}</td>
+      <td class="num">${l.tva} %</td>
+      <td class="num">${fmt(net)}</td>`}
+    </tr>`;});
+  const theadHtml = `<tr><th style="width:30px">#</th><th>Désignation</th><th class="num" style="width:90px">Quantité</th>
+    ${isBL?'':`<th class="num" style="width:90px">PU HT</th><th class="num" style="width:70px">Remise</th>
+    <th class="num" style="width:60px">TVA</th><th class="num" style="width:100px">Total HT</th>`}</tr>`;
+  const phraseLettres = {
+    factures:'la présente facture', avoirs:'le présent avoir', devis:'le présent devis',
+    proformas:'la présente facture proforma', bc:'le présent bon de commande', fachats:'la présente facture d\u2019achat',
+    commandes:'le présent bon de commande', retours:'le présent bon de retour', retoursF:'le présent bon de retour'
+  }[type];
+  const signGauche = isBL ? 'Signature du livreur' : 'Cachet et signature';
+  const signDroite = isBL ? 'Reçu par le client (nom, date, signature)'
+    : achat ? 'Accord du fournisseur' : 'Bon pour accord — le client';
+  const sousTitre = `
+    <p><b>N° ${esc(d.numero)}</b></p>
+    <p>Date : ${dfr(d.date)}</p>
+    ${(type==='factures'||type==='fachats') && d.echeance ? `<p>Échéance : ${dfr(d.echeance)}</p>`:''}
+    ${type==='bc' && d.dateReception ? `<p>Reçue le : ${dfr(d.dateReception)}</p>`:''}
+    ${d.origine ? `<p>${refLbl} : ${esc(d.origine)}</p>`:''}`;
+  const metaHtml = `<div class="blk">
+    <div class="t">${blocTiers}</div>
+    <p><b>${esc(cl.nom||'—')}</b></p>
+    ${cl.adresse?`<p>${esc(cl.adresse)}${cl.ville?', '+esc(cl.ville):''}</p>`:''}
+    ${cl.ice?`<p>ICE : ${esc(cl.ice)}</p>`:''}
+    ${cl.idf?`<p>IF : ${esc(cl.idf)}</p>`:''}
+    ${cl.tel?`<p>Tél : ${esc(cl.tel)}</p>`:''}
+  </div>`;
+  const finHtml = `
+    ${isBL ? '' : `
+    <div class="doc-tot">
+      ${c.remise>0?`<div class="row"><span>Remises</span><span>− ${fmt(c.remise)} DH</span></div>`:''}
+      <div class="row"><span>Total HT</span><span>${fmt(c.ht)} DH</span></div>
+      ${tvaRows || '<div class="row"><span>TVA</span><span>0,00 DH</span></div>'}
+      <div class="row grand"><span>TOTAL TTC${type==='avoirs'?' (EN VOTRE FAVEUR)':''}</span><span>${fmt(c.ttc)} DH</span></div>
+      ${(type==='factures' && (paye>0 || avoirs>0 || ras>0)) || (type==='fachats' && paye>0) ? `
+      ${ras>0?`<div class="row"><span>Retenue à la source (${fmt(d.rasTaux)} %)</span><span>− ${fmt(ras)} DH</span></div>`:''}
+      ${avoirs>0?`<div class="row"><span>Avoir(s) déduit(s)</span><span>− ${fmt(avoirs)} DH</span></div>`:''}
+      ${paye>0?`<div class="row"><span>Montant réglé</span><span>− ${fmt(paye)} DH</span></div>`:''}
+      <div class="row"><span><b>Reste à payer</b></span><span><b>${fmt(reste)} DH</b></span></div>`:''}
+    </div>
+    <div class="doc-lettres">Arrêté ${phraseLettres} à la somme de :
+      <b>${montantEnLettres(c.ttc)} TTC</b>.</div>`}
+    ${d.notes?`<div class="doc-notes"><b>Notes :</b> ${esc(d.notes)}</div>`:''}
+    <div class="doc-sign">
+      <div><b>${signGauche}</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div><b>${signDroite}</b><div class="l">&nbsp;</div></div>
+    </div>`;
+  $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` +
+    pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:22, capN:27, finCost:isBL?6:14}) + `</div>`;
+  window.print();
+}
+function imprimerReleve(clientId){
+  const cl = clientById(clientId); if(!cl) return;
+  const ev = [];
+  DB.factures.filter(f=>f.clientId===clientId).forEach(f=>{
+    ev.push({date:f.date, lbl:'Facture '+f.numero, deb:calcDoc(f).ttc, cre:0});
+    const ras = rasMontant(f);
+    if(ras>0) ev.push({date:f.date, lbl:'Retenue à la source ('+fmt(f.rasTaux)+' %) — '+f.numero, deb:0, cre:ras});
+  });
+  DB.avoirs.filter(a=>a.clientId===clientId).forEach(a=>{
+    ev.push({date:a.date, lbl:'Avoir '+a.numero+(a.origine?' (sur '+a.origine+')':''), deb:0, cre:calcDoc(a).ttc});
+  });
+  DB.reglements.filter(r=> r.statut!=='impayé' && factureById(r.factureId)?.clientId===clientId).forEach(r=>{
+    ev.push({date:r.date, lbl:'Règlement '+r.mode+(r.reference?' n° '+r.reference:'')+' — '+(factureById(r.factureId)?.numero||''), deb:0, cre:Number(r.montant)||0});
+  });
+  ev.sort((a,b)=> a.date.localeCompare(b.date));
+  let solde = 0;
+  const rows = ev.map(e=>{
+    solde = r2(solde + e.deb - e.cre);
+    return `<tr><td>${dfr(e.date)}</td><td>${esc(e.lbl)}</td>
+      <td class="num">${e.deb?fmt(e.deb):''}</td><td class="num">${e.cre?fmt(e.cre):''}</td>
+      <td class="num"><b>${fmt(solde)}</b></td></tr>`;
+  });
+  const metaHtml = `
+    <div class="blk"><div class="t">Client</div><p><b>${esc(cl.nom)}</b></p>
+      ${cl.adresse?`<p>${esc(cl.adresse)}${cl.ville?', '+esc(cl.ville):''}</p>`:''}${cl.ice?`<p>ICE : ${esc(cl.ice)}</p>`:''}</div>
+    <div class="blk" style="text-align:right"><div class="t">Solde dû</div>
+      <p style="font-size:18px; font-weight:800; color:${solde>0.004?'#B7362C':'#1E7A4E'}">${fmt(solde)} DH</p></div>`;
+  const finHtml = `
+    ${ev.length?'':'<p style="margin-top:20px">Aucun mouvement enregistré pour ce client.</p>'}
+    <div class="doc-lettres">Solde arrêté à la somme de : <b>${montantEnLettres(Math.abs(solde))}${solde<-0.004?' (en faveur du client)':''}</b>.</div>
+    <div class="doc-sign">
+      <div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div></div>
+    </div>`;
+  $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
+    titre:'Relevé de compte', sousTitre:`<p>Édité le ${dfr(today())}</p>`, metaHtml,
+    theadHtml:`<tr><th>Date</th><th>Libellé</th><th class="num" style="width:100px">Débit</th>
+      <th class="num" style="width:100px">Crédit</th><th class="num" style="width:110px">Solde</th></tr>`,
+    rows, finHtml, cap1:22, capN:28, finCost:8
+  }) + `</div>`;
+  window.print();
+}
+
+/* ---------- Paramètres ---------- */
+const POLICES = ['Segoe UI','Arial','Helvetica','Verdana','Trebuchet MS','Tahoma','Georgia','Times New Roman','Garamond','Courier New'];
+function vParametres(){
+  const S = DB.societe, st = S.docStyle || {};
+  const f = (id,l,v,ph) => `<div class="field"><label>${l}</label><input id="${id}" value="${esc(v||'')}" placeholder="${ph||''}"></div>`;
+  return `
+  <div class="page-head"><div><h2>Paramètres</h2><div class="sub">Identité de la société — reprise sur tous vos documents (mentions obligatoires au Maroc)</div></div></div>
+  <div class="card card-pad" style="max-width:900px">
+    <h3>Société</h3>
+    <div class="grid2">
+      ${f('s_nom','Raison sociale *',S.nom)}
+      ${f('s_act','Activité',S.activite)}
+      <div class="field" style="grid-column:1/-1"><label>Adresse du siège</label><input id="s_adr" value="${esc(S.adresse||'')}"></div>
+      ${f('s_ville','Ville',S.ville)}
+      ${f('s_tel','Téléphone',S.tel)}
+      ${f('s_email','Email',S.email)}
+      ${f('s_cap','Capital social (DH)',S.capital)}
+    </div>
+    <h3 style="margin-top:20px">Identifiants légaux</h3>
+    <div class="grid3">
+      ${f('s_ice','ICE (15 chiffres)',S.ice,'000000000000000')}
+      ${f('s_if','Identifiant fiscal (IF)',S.idf)}
+      ${f('s_rc','Registre de commerce (RC)',S.rc)}
+      ${f('s_pat','Taxe professionnelle (Patente)',S.patente)}
+      ${f('s_cnss','N° affiliation CNSS',S.cnss)}
+      <div class="field"><label>TVA par défaut</label>
+        <select id="s_tva">${[20,14,10,7,0].map(t=>`<option value="${t}" ${Number(S.tvaDefaut)===t?'selected':''}>${t} %</option>`).join('')}</select></div>
+    </div>
+    <div class="field" style="margin-top:12px"><label>RIB bancaire (affiché en pied de facture)</label><input id="s_rib" value="${esc(S.rib||'')}"></div>
+
+    <h3 style="margin-top:22px">Charte des documents imprimés</h3>
+    <div class="grid3">
+      <div class="field"><label>Couleur principale</label><input id="s_coul" type="color" value="${esc(st.couleur||'#0C4A46')}" oninput="prevStyle()" style="height:40px; padding:3px"></div>
+      <div class="field"><label>Couleur d'accent</label><input id="s_acc" type="color" value="${esc(st.accent||'#D9922E')}" oninput="prevStyle()" style="height:40px; padding:3px"></div>
+      <div class="field"><label>Police d'écriture</label>
+        <select id="s_police" onchange="prevStyle()">${POLICES.map(p=>`<option ${st.police===p?'selected':''}>${p}</option>`).join('')}</select></div>
+    </div>
+    <div id="stylePrev" style="margin-top:12px; border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+      border-top:4px solid ${esc(st.couleur||'#0C4A46')}; font-family:'${esc(st.police||'Segoe UI')}', Arial, sans-serif">
+      <div style="font-size:1.05rem; font-weight:800; color:${esc(st.couleur||'#0C4A46')}">FACTURE N° FAC-2026-0001</div>
+      <div style="font-size:.85rem; margin-top:4px">Aperçu de la police sur vos documents — <span style="border-left:4px solid ${esc(st.accent||'#D9922E')}; padding-left:8px; font-style:italic">Arrêté la présente facture à la somme de…</span></div>
+    </div>
+
+    <h3 style="margin-top:22px">Logo de la société</h3>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+      ${S.logo?`<img src="${S.logo}" alt="Logo" style="max-height:60px; max-width:200px; border:1px solid var(--line); border-radius:8px; padding:6px; background:#fff">`:'<span style="color:var(--muted); font-size:.85rem">Aucun logo — il apparaîtra en haut de tous vos documents.</span>'}
+      <label class="btn">📷 ${S.logo?'Changer le logo':'Ajouter un logo'} <input type="file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>
+      ${S.logo?'<button class="btn btn-danger" onclick="removeLogo()">Retirer</button>':''}
+    </div>
+
+    <div style="margin-top:20px"><button class="btn btn-primary" onclick="saveSociete()">Enregistrer les paramètres</button></div>
+  </div>
+
+  <div class="card card-pad" style="max-width:900px; margin-top:16px">
+    <h3>Dépôts de stock</h3>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:12px">Chaque facture, avoir ou bon de commande précise son dépôt. Utilisez « ± Stock » sur un produit pour transférer entre dépôts.</p>
+    ${DB.depots.map(dp=>`
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px">
+        <input value="${esc(dp.nom)}" onchange="renameDepot('${dp.id}', this.value)" style="padding:8px 11px; border:1px solid var(--line); border-radius:8px; flex:1; max-width:320px">
+        ${DB.depots.length>1?`<button class="btn btn-ghost btn-sm" title="Supprimer ce dépôt" onclick="delDepot('${dp.id}')" style="color:var(--red)">🗑</button>`:''}
+      </div>`).join('')}
+    <div style="display:flex; gap:10px; margin-top:10px">
+      <input id="newDep" placeholder="Nom du nouveau dépôt (ex : Magasin centre-ville)" style="padding:8px 11px; border:1px solid var(--line); border-radius:8px; flex:1; max-width:320px">
+      <button class="btn" onclick="addDepot()">+ Ajouter un dépôt</button>
+    </div>
+  </div>
+
+  <div class="card card-pad" style="max-width:900px; margin-top:16px">
+    <h3>Accès protégé</h3>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:12px">Protection basique par mot de passe à l'ouverture (dissuasive, les données restant lisibles sur l'appareil). Le profil <b>vendeur</b> n'accède qu'à la caisse, aux ventes, aux clients et aux produits.</p>
+    <label style="display:flex; align-items:center; gap:8px; font-size:.9rem; font-weight:600; margin-bottom:12px">
+      <input type="checkbox" id="sec_actif" ${DB.securite.actif?'checked':''}> Activer le verrouillage à l'ouverture</label>
+    <div class="grid2">
+      <div class="field"><label>Mot de passe administrateur ${DB.securite.admin?'(défini — laisser vide pour conserver)':''}</label>
+        <input id="sec_admin" type="password" placeholder="${DB.securite.admin?'••••••••':'Obligatoire pour activer'}"></div>
+      <div class="field"><label>Mot de passe vendeur ${DB.securite.vendeur?'(défini — laisser vide pour conserver)':'(optionnel)'}</label>
+        <input id="sec_vendeur" type="password" placeholder="${DB.securite.vendeur?'••••••••':'Accès caisse & ventes'}"></div>
+    </div>
+    ${DB.securite.vendeur?`<label style="display:flex; align-items:center; gap:8px; font-size:.82rem; margin-top:8px"><input type="checkbox" id="sec_vendeur_off"> Supprimer le profil vendeur</label>`:''}
+    <div style="display:flex; gap:10px; margin-top:14px">
+      <button class="btn btn-primary" onclick="saveSecurite()">Enregistrer la sécurité</button>
+      ${DB.securite.actif && DB.securite.admin?'<button class="btn" onclick="verrouiller()">🔒 Verrouiller maintenant</button>':''}
+    </div>
+  </div>
+
+  <div class="card card-pad" style="max-width:900px; margin-top:16px">
+    <h3>Sauvegarde des données</h3>
+    <p style="font-size:.87rem; color:var(--muted); margin-bottom:12px">
+      Toutes les données sont stockées <b>localement dans ce navigateur</b>. Exportez régulièrement une sauvegarde
+      (fichier JSON) pour vous protéger et pour transférer vos données vers un autre poste.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap">
+      <button class="btn btn-accent" onclick="exporter()">⬇ Exporter la sauvegarde (JSON)</button>
+      <label class="btn">⬆ Importer une sauvegarde <input type="file" accept=".json,application/json" style="display:none" onchange="importer(this)"></label>
+      <button class="btn btn-danger" onclick="reinitialiser()">Réinitialiser toutes les données</button>
+    </div>
+  </div>`;
+}
+function prevStyle(){
+  const p = $('#stylePrev'); if(!p) return;
+  const coul = $('#s_coul').value, acc = $('#s_acc').value, pol = $('#s_police').value;
+  p.style.borderTopColor = coul;
+  p.style.fontFamily = "'" + pol + "', Arial, sans-serif";
+  p.children[0].style.color = coul;
+  p.querySelector('span').style.borderLeftColor = acc;
+}
+function saveSociete(){
+  const nom = $('#s_nom').value.trim();
+  if(!nom) return toast('La raison sociale est obligatoire.', true);
+  const ice = $('#s_ice').value.trim();
+  if(ice && !/^\d{15}$/.test(ice)) return toast('L\u2019ICE doit comporter exactement 15 chiffres.', true);
+  Object.assign(DB.societe, { nom, activite:$('#s_act').value.trim(), adresse:$('#s_adr').value.trim(), ville:$('#s_ville').value.trim(),
+    tel:$('#s_tel').value.trim(), email:$('#s_email').value.trim(), capital:$('#s_cap').value.trim(),
+    ice, idf:$('#s_if').value.trim(), rc:$('#s_rc').value.trim(), patente:$('#s_pat').value.trim(),
+    cnss:$('#s_cnss').value.trim(), rib:$('#s_rib').value.trim(), tvaDefaut:Number($('#s_tva').value),
+    docStyle:{ couleur:$('#s_coul').value, accent:$('#s_acc').value, police:$('#s_police').value } });
+  saveDB(); render(); toast('Paramètres enregistrés ✓');
+}
+function uploadLogo(input){
+  const file = input.files[0]; if(!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 120/img.height, 400/img.width);
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width*scale); cv.height = Math.round(img.height*scale);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      DB.societe.logo = cv.toDataURL('image/png');
+      saveDB(); render(); toast('Logo enregistré ✓');
+    };
+    img.src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+function removeLogo(){
+  DB.societe.logo = '';
+  saveDB(); render(); toast('Logo retiré');
+}
+function addDepot(){
+  const nom = $('#newDep').value.trim();
+  if(!nom) return toast('Saisissez le nom du dépôt.', true);
+  DB.depots.push({id:uid(), nom});
+  saveDB(); render(); toast('Dépôt ajouté ✓');
+}
+function renameDepot(id, val){
+  const dp = depotById(id); if(!dp) return;
+  if(!val.trim()) return toast('Le nom ne peut pas être vide.', true);
+  dp.nom = val.trim(); saveDB(); toast('Dépôt renommé ✓');
+}
+function delDepot(id){
+  if(DB.depots.length<=1) return toast('Il faut au moins un dépôt.', true);
+  if(DB.produits.some(p=> Math.abs(Number(p.stocks?.[id])||0) > 0.004))
+    return toast('Ce dépôt contient encore du stock : transférez-le d\u2019abord (± Stock).', true);
+  if(['factures','avoirs','bc'].some(t=> DB[t].some(d=>d.depotId===id)))
+    return toast('Des documents référencent ce dépôt : il ne peut pas être supprimé.', true);
+  if(!confirm('Supprimer ce dépôt ?')) return;
+  DB.depots = DB.depots.filter(d=>d.id!==id);
+  DB.produits.forEach(p=>{ if(p.stocks) delete p.stocks[id]; });
+  saveDB(); render(); toast('Dépôt supprimé');
+}
+function exporter(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sauvegarde-tijara-' + today() + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Sauvegarde exportée ✓');
+}
+function importer(input){
+  const file = input.files[0]; if(!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      const data = JSON.parse(rd.result);
+      if(!data.societe || !Array.isArray(data.factures)) throw new Error('format');
+      if(!confirm('Remplacer toutes les données actuelles par cette sauvegarde ?')) return;
+      DB = migrate(data);
+      saveDB(); render(); toast('Sauvegarde importée ✓');
+    }catch(e){ toast('Fichier invalide : ce n\u2019est pas une sauvegarde Tijara.', true); }
+    input.value = '';
+  };
+  rd.readAsText(file);
+}
+function reinitialiser(){
+  if(!confirm('⚠ Toutes les données (clients, produits, factures…) seront définitivement effacées. Continuer ?')) return;
+  if(!confirm('Dernière confirmation : effacer TOUT ?')) return;
+  DB = defaultDB(); saveDB(); render(); toast('Application réinitialisée');
+}
+
+
+/* ==================================================================
+   MODULES v4 : caisse, charges, trésorerie, TVA, reçus, traites,
+   relances, inventaire, retours, commandes clients, sécurité
+   ================================================================== */
+
+/* ---------- Comptes & trésorerie ---------- */
+function soldeCompte(id){
+  const c = compteById(id); if(!c) return 0;
+  let s = Number(c.soldeInitial)||0;
+  DB.reglements.forEach(r=>{ if(r.compteId===id && r.statut!=='impayé') s += Number(r.montant)||0; });
+  DB.reglementsF.forEach(r=>{ if(r.compteId===id && r.statut!=='impayé') s -= Number(r.montant)||0; });
+  DB.charges.forEach(ch=>{ if(ch.compteId===id) s -= Number(ch.montant)||0; });
+  return r2(s);
+}
+function autoCompte(mode){
+  const c = $('#r_cpt'); if(!c) return;
+  const t = /Espèces/.test(mode) ? 'caisse' : 'banque';
+  const cp = DB.comptes.find(x=>x.type===t) || DB.comptes[0];
+  if(cp) c.value = cp.id;
+}
+function vTresorerie(){
+  const total = DB.comptes.reduce((a,c)=>a+soldeCompte(c.id),0);
+  const mvts = [];
+  DB.reglements.forEach(r=>{ if(r.statut!=='impayé') mvts.push({date:r.date, lbl:'Encaissement '+(factureById(r.factureId)?.numero||''), m:+r.montant, cpt:r.compteId, mode:r.mode}); });
+  DB.reglementsF.forEach(r=>{ if(r.statut!=='impayé') mvts.push({date:r.date, lbl:'Paiement fournisseur '+(fachatById(r.factureId)?.numero||''), m:-r.montant, cpt:r.compteId, mode:r.mode}); });
+  DB.charges.forEach(ch=> mvts.push({date:ch.date, lbl:'Charge : '+ch.libelle, m:-ch.montant, cpt:ch.compteId, mode:ch.mode||''}));
+  mvts.sort((a,b)=> b.date.localeCompare(a.date));
+  return `
+  <div class="page-head"><div><h2>Trésorerie &amp; banques</h2><div class="sub">Soldes alimentés par les encaissements, paiements et charges</div></div>
+    <button class="btn btn-primary" onclick="editCompte()">+ Ajouter un compte</button></div>
+  <div class="chips">
+    ${DB.comptes.map(c=>{const s=soldeCompte(c.id); return `<div class="chip">${c.type==='caisse'?'💵':'🏦'} ${esc(c.nom)}<b style="color:${s>=0?'var(--green)':'var(--red)'}">${fmtDH(s)}</b></div>`;}).join('')}
+    <div class="chip">Trésorerie totale<b style="color:${total>=0?'var(--green)':'var(--red)'}">${fmtDH(total)}</b></div>
+  </div>
+  <div class="dash-grid">
+    <div class="card">
+      <table class="list"><thead><tr><th>Date</th><th>Mouvement</th><th>Compte</th><th>Mode</th><th class="num">Montant</th></tr></thead><tbody>
+      ${mvts.slice(0,25).map(m=>`<tr><td>${dfr(m.date)}</td><td>${esc(m.lbl)}</td><td>${esc(compteById(m.cpt)?.nom||'—')}</td>
+        <td>${m.mode?`<span class="badge b-blue">${esc(m.mode)}</span>`:'—'}</td>
+        <td class="num" style="font-weight:700; color:${m.m>=0?'var(--green)':'var(--red)'}">${m.m>=0?'+':''}${fmt(m.m)}</td></tr>`).join('')
+        || '<tr><td colspan="5" class="empty">Aucun mouvement.</td></tr>'}
+      </tbody></table>
+    </div>
+    <div class="card card-pad">
+      <h3>Comptes</h3>
+      <table class="list"><tbody>
+      ${DB.comptes.map(c=>`<tr><td><b>${esc(c.nom)}</b><br><small style="color:var(--muted)">${c.type==='caisse'?'Caisse':'Banque'} · solde initial ${fmt(c.soldeInitial)}</small></td>
+        <td class="num"><b>${fmtDH(soldeCompte(c.id))}</b></td>
+        <td class="actions"><button class="btn btn-ghost btn-sm" onclick="editCompte('${c.id}')">✎</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delCompte('${c.id}')">🗑</button></td></tr>`).join('')}
+      </tbody></table>
+    </div>
+  </div>`;
+}
+function editCompte(id){
+  const c = id ? compteById(id) : {type:'banque', soldeInitial:0};
+  openModal((id?'Modifier':'Nouveau')+' compte de trésorerie', `
+    <div class="grid3">
+      <div class="field" style="grid-column:1/3"><label>Nom du compte <span class="req">*</span></label><input id="c_nom" value="${esc(c.nom||'')}" placeholder="Banque Populaire, Caisse magasin…"></div>
+      <div class="field"><label>Type</label><select id="c_type"><option value="caisse" ${c.type==='caisse'?'selected':''}>Caisse (espèces)</option><option value="banque" ${c.type==='banque'?'selected':''}>Banque</option></select></div>
+      <div class="field"><label>Solde initial (DH)</label><input id="c_init" type="number" step="0.01" value="${c.soldeInitial ?? 0}"></div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveCompte('${id||''}')">Enregistrer</button>`);
+}
+function saveCompte(id){
+  const nom = $('#c_nom').value.trim();
+  if(!nom) return toast('Le nom est obligatoire.', true);
+  const o = {nom, type:$('#c_type').value, soldeInitial:parseFloat($('#c_init').value)||0};
+  if(id) Object.assign(compteById(id), o);
+  else { o.id = uid(); DB.comptes.push(o); }
+  saveDB(); closeModal(); render(); toast('Compte enregistré ✓');
+}
+function delCompte(id){
+  if(DB.comptes.length<=1) return toast('Il faut au moins un compte.', true);
+  if(DB.reglements.some(r=>r.compteId===id) || DB.reglementsF.some(r=>r.compteId===id) || DB.charges.some(c=>c.compteId===id))
+    return toast('Des mouvements sont liés à ce compte : il ne peut pas être supprimé.', true);
+  if(!confirm('Supprimer ce compte ?')) return;
+  DB.comptes = DB.comptes.filter(c=>c.id!==id);
+  saveDB(); render(); toast('Compte supprimé');
+}
+
+/* ---------- Charges & dépenses ---------- */
+const CATEGORIES_CHARGES = ['Loyer','Salaires & CNSS','Électricité & eau','Carburant & transport','Téléphone & internet','Fournitures','Impôts & taxes','Entretien & réparations','Marketing','Honoraires','Autre'];
+let chMois = today().slice(0,7);
+function vCharges(){
+  const arr = DB.charges.filter(c=> c.date.slice(0,7)===chMois).sort((a,b)=> b.date.localeCompare(a.date));
+  const totMois = arr.reduce((a,c)=>a+Number(c.montant||0),0);
+  const totAn = DB.charges.filter(c=> c.date.slice(0,4)===chMois.slice(0,4)).reduce((a,c)=>a+Number(c.montant||0),0);
+  return `
+  <div class="page-head"><div><h2>Charges &amp; dépenses</h2><div class="sub">Loyer, salaires, carburant… incluses dans le calcul du résultat (Rapports)</div></div>
+    <button class="btn btn-primary" onclick="editCharge()">+ Ajouter une charge</button></div>
+  <div class="toolbar"><input type="month" value="${chMois}" onchange="chMois=this.value; render()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px"></div>
+  <div class="chips">
+    <div class="chip">Total du mois<b style="color:var(--red)">${fmtDH(totMois)}</b></div>
+    <div class="chip">Total ${chMois.slice(0,4)}<b>${fmtDH(totAn)}</b></div>
+  </div>
+  <div class="card">${arr.length ? `
+    <table class="list"><thead><tr><th>Date</th><th>Catégorie</th><th>Libellé</th><th>Compte</th><th class="num">Montant</th><th></th></tr></thead><tbody>
+    ${arr.map(c=>`<tr><td>${dfr(c.date)}</td><td><span class="badge b-gray">${esc(c.categorie)}</span></td>
+      <td>${esc(c.libelle)}</td><td>${esc(compteById(c.compteId)?.nom||'—')}</td>
+      <td class="num" style="font-weight:700; color:var(--red)">${fmtDH(c.montant)}</td>
+      <td class="actions"><button class="btn btn-ghost btn-sm" onclick="editCharge('${c.id}')">✎</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delCharge('${c.id}')">🗑</button></td></tr>`).join('')}
+    </tbody></table>` : '<div class="empty">Aucune charge sur ce mois.</div>'}
+  </div>`;
+}
+function editCharge(id){
+  const c = id ? DB.charges.find(x=>x.id===id) : {date:today(), categorie:'Loyer'};
+  openModal((id?'Modifier':'Nouvelle')+' charge', `
+    <div class="grid2">
+      <div class="field"><label>Date</label><input id="ch_date" type="date" value="${c.date||today()}"></div>
+      <div class="field"><label>Catégorie</label><select id="ch_cat">${CATEGORIES_CHARGES.map(x=>`<option ${c.categorie===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field" style="grid-column:1/-1"><label>Libellé <span class="req">*</span></label><input id="ch_lib" value="${esc(c.libelle||'')}" placeholder="Loyer magasin juillet, gasoil camion…"></div>
+      <div class="field"><label>Montant (DH) <span class="req">*</span></label><input id="ch_mnt" type="number" step="0.01" min="0" value="${c.montant ?? ''}"></div>
+      <div class="field"><label>Compte débité</label><select id="ch_cpt">${DB.comptes.map(x=>`<option value="${x.id}" ${c.compteId===x.id?'selected':''}>${esc(x.nom)}</option>`).join('')}</select></div>
+    </div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveCharge('${id||''}')">Enregistrer</button>`);
+}
+function saveCharge(id){
+  const lib = $('#ch_lib').value.trim(), m = parseFloat($('#ch_mnt').value);
+  if(!lib) return toast('Le libellé est obligatoire.', true);
+  if(isNaN(m) || m<=0) return toast('Montant invalide.', true);
+  const o = {date:$('#ch_date').value||today(), categorie:$('#ch_cat').value, libelle:lib, montant:r2(m), compteId:$('#ch_cpt').value};
+  if(id) Object.assign(DB.charges.find(x=>x.id===id), o);
+  else { o.id = uid(); DB.charges.push(o); }
+  saveDB(); closeModal(); render(); toast('Charge enregistrée ✓');
+}
+function delCharge(id){
+  if(!confirm('Supprimer cette charge ?')) return;
+  DB.charges = DB.charges.filter(c=>c.id!==id);
+  saveDB(); render(); toast('Charge supprimée');
+}
+
+/* ---------- Caisse (point de vente) ---------- */
+let ticket = [], posSearch='', posMode='Espèces', posRecuMnt='', posClient='', posDepot='';
+const sessionOuverte = () => DB.sessions.find(s=>!s.fermeture);
+function vCaisse(){
+  const s = sessionOuverte();
+  if(!s) return `
+  <div class="page-head"><div><h2>Caisse — point de vente</h2><div class="sub">Vente comptoir rapide avec ticket de caisse</div></div></div>
+  <div class="card card-pad" style="max-width:480px">
+    <h3>Ouvrir la session de caisse</h3>
+    <div class="field"><label>Fond de caisse initial (espèces, DH)</label><input id="cx_fond" type="number" step="0.01" min="0" value="0"></div>
+    <button class="btn btn-primary" style="margin-top:14px" onclick="ouvrirSession()">▶ Ouvrir la caisse</button>
+  </div>`;
+  const ventes = DB.factures.filter(f=>f.sessionId===s.id);
+  const totSession = ventes.reduce((a,f)=>a+calcDoc(f).ttc,0);
+  const tot = calcDoc({lignes:ticket});
+  const recuM = parseFloat(posRecuMnt)||0;
+  const rendu = posMode==='Espèces' && recuM > tot.ttc ? r2(recuM - tot.ttc) : 0;
+  const prods = DB.produits.filter(p=> (p.ref+' '+p.designation+' '+(p.codeBarres||'')).toLowerCase().includes(posSearch.toLowerCase()));
+  return `
+  <div class="page-head"><div><h2>Caisse — point de vente</h2>
+    <div class="sub">Session ouverte le ${dfr(s.ouverture.slice(0,10))} à ${s.ouverture.slice(11,16)} · fond ${fmt(s.fond)} DH · ${ventes.length} ticket(s) · ${fmtDH(totSession)}</div></div>
+    <button class="btn btn-danger" onclick="cloturerCaisse()">■ Clôturer la caisse</button></div>
+  <div class="pos">
+    <div class="card card-pad">
+      <input type="search" id="posQ" placeholder="Rechercher ou scanner un code-barres puis Entrée…" value="${esc(posSearch)}"
+        oninput="posSearch=this.value; render(); $('#posQ').focus(); $('#posQ').setSelectionRange(999,999)"
+        onkeydown="if(event.key==='Enter') posScan(this.value)"
+        style="width:100%; padding:10px 14px; border:1px solid var(--line); border-radius:8px; margin-bottom:12px">
+      <div class="pos-grid">
+        ${prods.map(p=>`<button onclick="posAdd('${p.id}')">${esc(p.designation)}<b>${fmt(p.prixVente)} DH</b>
+          <small style="color:var(--muted)">stock ${fmt(p.stock)}</small></button>`).join('') || '<div class="empty">Aucun produit trouvé.</div>'}
+      </div>
+    </div>
+    <div class="card card-pad">
+      <h3>Ticket en cours</h3>
+      <div class="grid2" style="margin-bottom:8px">
+        <div class="field"><label>Client</label><select onchange="posClient=this.value">
+          <option value="">Client de passage</option>
+          ${DB.clients.filter(c=>!c.comptoir).map(c=>`<option value="${c.id}" ${posClient===c.id?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></div>
+        <div class="field"><label>Dépôt</label><select onchange="posDepot=this.value">
+          ${DB.depots.map(dp=>`<option value="${dp.id}" ${(posDepot||DB.depots[0].id)===dp.id?'selected':''}>${esc(dp.nom)}</option>`).join('')}</select></div>
+      </div>
+      ${ticket.length?`<table class="lines"><tbody>
+      ${ticket.map((l,i)=>`<tr><td style="width:44%">${esc(l.designation)}</td>
+        <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="posQte(${i},-1)">−</button>
+        <b> ${fmt(l.qte)} </b><button class="btn btn-ghost btn-sm" onclick="posQte(${i},1)">+</button></td>
+        <td class="ln-total">${fmt(r2(l.qte*l.pu))}</td>
+        <td><button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="ticket.splice(${i},1); render()">×</button></td></tr>`).join('')}
+      </tbody></table>`:'<div class="empty">Cliquez sur les produits pour les ajouter.</div>'}
+      <div class="pos-total">${fmt(tot.ttc)} DH</div>
+      <div class="grid2">
+        <div class="field"><label>Mode de paiement</label><select onchange="posMode=this.value; render()">
+          ${['Espèces','Carte bancaire','Chèque','Virement'].map(m=>`<option ${posMode===m?'selected':''}>${m}</option>`).join('')}</select></div>
+        ${posMode==='Espèces'?`<div class="field"><label>Montant reçu (DH)</label>
+          <input type="number" step="0.01" value="${esc(posRecuMnt)}" oninput="posRecuMnt=this.value; $('#posRendu').textContent = (function(){const r=parseFloat(posRecuMnt)||0; const t=${tot.ttc}; return r>t? 'Rendu : '+ (Math.round((r-t)*100)/100).toLocaleString('fr-FR',{minimumFractionDigits:2}) +' DH':'';})()"></div>`:''}
+      </div>
+      <p id="posRendu" style="font-weight:800; color:var(--green); min-height:1.2em; margin-top:6px">${rendu?'Rendu : '+fmt(rendu)+' DH':''}</p>
+      <button class="btn btn-primary" style="width:100%; padding:12px; font-size:1rem" onclick="validerTicket()">✓ Encaisser &amp; imprimer le ticket</button>
+    </div>
+  </div>`;
+}
+function ouvrirSession(){
+  const fond = parseFloat($('#cx_fond').value)||0;
+  DB.sessions.push({id:uid(), ouverture:new Date().toISOString(), fond:r2(fond)});
+  saveDB(); render(); toast('Caisse ouverte ✓');
+}
+function posAdd(pid){
+  const l = ticket.find(x=>x.produitId===pid);
+  if(l) l.qte = r2(l.qte+1);
+  else { const p = produitById(pid); ticket.push({produitId:pid, designation:p.designation, qte:1, pu:p.prixVente, remise:0, tva:p.tva}); }
+  render();
+}
+function posQte(i, d){
+  ticket[i].qte = r2(ticket[i].qte + d);
+  if(ticket[i].qte <= 0) ticket.splice(i,1);
+  render();
+}
+function posScan(q){
+  q = q.trim(); if(!q) return;
+  const p = DB.produits.find(p=> p.codeBarres===q || p.ref===q);
+  if(p){ posSearch=''; posAdd(p.id); const el=$('#posQ'); if(el){el.value=''; el.focus();} }
+  else toast('Aucun produit avec ce code-barres / référence.', true);
+}
+function validerTicket(){
+  if(!ticket.length) return toast('Le ticket est vide.', true);
+  const s = sessionOuverte(); if(!s) return toast('Ouvrez d\u2019abord la caisse.', true);
+  let cid = posClient;
+  if(!cid){
+    let cpt = DB.clients.find(c=>c.comptoir);
+    if(!cpt){ cpt = {id:uid(), nom:'Client de passage', comptoir:true}; DB.clients.push(cpt); }
+    cid = cpt.id;
+  }
+  const f = { id:uid(), numero:nextNumero('factures'), date:today(), clientId:cid,
+    lignes:JSON.parse(JSON.stringify(ticket)), notes:'Ticket de caisse', echeance:'', rasTaux:0,
+    depotId:posDepot||DB.depots[0].id, sessionId:s.id };
+  DB.factures.push(f); appliquerStock(f.lignes, -1, f.depotId);
+  const ttc = calcDoc(f).ttc;
+  const tCpt = /Espèces/.test(posMode) ? 'caisse' : 'banque';
+  const cpt = (DB.comptes.find(c=>c.type===tCpt) || DB.comptes[0]).id;
+  const reg = { id:uid(), factureId:f.id, date:today(), montant:ttc, mode:posMode, reference:'', compteId:cpt, recu:nextNumero('recus') };
+  if(MODES_SUIVIS(posMode)) reg.statut = 'en portefeuille';
+  DB.reglements.push(reg);
+  const recuM = parseFloat(posRecuMnt)||0;
+  const rendu = posMode==='Espèces' && recuM > ttc ? r2(recuM - ttc) : 0;
+  saveDB();
+  imprimerTicket(f, reg, recuM, rendu);
+  ticket = []; posRecuMnt=''; posSearch='';
+  render(); toast('Ticket '+f.numero+' encaissé ✓');
+}
+function imprimerTicket(f, reg, recu, rendu){
+  const c = calcDoc(f), S = DB.societe;
+  $('#printArea').innerHTML = `
+  <div class="ticket">
+    <h3>${esc(S.nom)}</h3>
+    <p class="c">${esc(S.adresse||'')}${S.ville?', '+esc(S.ville):''}<br>${S.tel?'Tél : '+esc(S.tel):''}${S.ice?'<br>ICE : '+esc(S.ice):''}</p>
+    <div class="sep2"></div>
+    <p><b>Ticket ${esc(f.numero)}</b><br>${dfr(f.date)} ${new Date().toTimeString().slice(0,5)}</p>
+    <div class="sep2"></div>
+    <table>
+      ${f.lignes.map(l=>`<tr><td>${esc(l.designation)}<br><small>${fmt(l.qte)} x ${fmt(l.pu)}</small></td>
+        <td class="r">${fmt(r2(l.qte*l.pu*(1-(l.remise||0)/100)))}</td></tr>`).join('')}
+    </table>
+    <div class="sep2"></div>
+    <table>
+      <tr><td>Total HT</td><td class="r">${fmt(c.ht)}</td></tr>
+      <tr><td>TVA</td><td class="r">${fmt(c.tva)}</td></tr>
+      <tr><td><b>TOTAL TTC</b></td><td class="r"><b>${fmt(c.ttc)} DH</b></td></tr>
+      <tr><td>${esc(reg.mode)}</td><td class="r">${fmt(recu>c.ttc?recu:c.ttc)}</td></tr>
+      ${rendu?`<tr><td>Rendu</td><td class="r">${fmt(rendu)}</td></tr>`:''}
+    </table>
+    <div class="sep2"></div>
+    <p class="c">Reçu n° ${esc(reg.recu||'')}<br>Merci de votre visite !</p>
+  </div>`;
+  window.print();
+}
+function cloturerCaisse(){
+  const s = sessionOuverte(); if(!s) return;
+  const ventes = DB.factures.filter(f=>f.sessionId===s.id);
+  const parMode = {};
+  ventes.forEach(f=> DB.reglements.filter(r=>r.factureId===f.id).forEach(r=>{
+    parMode[r.mode] = r2((parMode[r.mode]||0) + Number(r.montant||0));
+  }));
+  const especes = parMode['Espèces']||0;
+  const attendu = r2(Number(s.fond||0) + especes);
+  openModal('Clôture de caisse', `
+    <table class="list"><tbody>
+      <tr><td>Fond de caisse initial</td><td class="num">${fmt(s.fond)}</td></tr>
+      ${Object.entries(parMode).map(([m,v])=>`<tr><td>Ventes — ${esc(m)}</td><td class="num">${fmt(v)}</td></tr>`).join('') || '<tr><td colspan="2">Aucune vente sur la session.</td></tr>'}
+      <tr style="font-weight:800"><td>Espèces attendues en caisse</td><td class="num">${fmt(attendu)}</td></tr>
+    </tbody></table>
+    <div class="field" style="margin-top:14px"><label>Espèces comptées (DH)</label>
+      <input id="cx_compte" type="number" step="0.01" value="${attendu}"></div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="validerCloture('${s.id}', ${attendu})">Clôturer la session</button>`);
+}
+function validerCloture(sid, attendu){
+  const s = DB.sessions.find(x=>x.id===sid); if(!s) return;
+  const compte = parseFloat($('#cx_compte').value)||0;
+  s.fermeture = new Date().toISOString();
+  s.compte = r2(compte); s.attendu = r2(attendu); s.ecart = r2(compte - attendu);
+  saveDB(); closeModal(); render();
+  toast(s.ecart===0 ? 'Caisse clôturée — aucun écart ✓' : 'Caisse clôturée — écart de '+fmt(s.ecart)+' DH', s.ecart!==0);
+}
+
+/* ---------- Reçu de paiement ---------- */
+function imprimerRecu(id){
+  const r = DB.reglements.find(x=>x.id===id); if(!r) return;
+  if(!r.recu){ r.recu = nextNumero('recus'); saveDB(); }
+  const f = factureById(r.factureId);
+  const cl = clientById(f?.clientId) || {};
+  $('#printArea').innerHTML = `
+  <div class="doc" ${docStyleAttr()}>
+    <div class="doc-head">
+      ${entetePrint()}
+      <div class="doc-title"><h2>Reçu de paiement</h2><p><b>N° ${esc(r.recu)}</b></p><p>Date : ${dfr(r.date)}</p></div>
+    </div>
+    <div class="doc-meta"><div class="blk">
+      <div class="t">Reçu de</div>
+      <p><b>${esc(cl.nom||'—')}</b></p>
+      ${cl.ice?`<p>ICE : ${esc(cl.ice)}</p>`:''}
+    </div></div>
+    <div class="doc-lettres" style="font-size:14px; padding:16px">
+      Nous accusons réception de la somme de : <b>${montantEnLettres(r.montant)}</b> (${fmt(r.montant)} DH)<br><br>
+      Réglée par : <b>${esc(r.mode)}</b>${r.reference?' — réf. '+esc(r.reference):''}${r.echeance?' — échéance le '+dfr(r.echeance):''}<br>
+      En règlement de : <b>Facture N° ${esc(f?.numero||'—')}</b>
+      ${f ? (resteFacture(f)>0.004 ? '<br>Reste dû sur cette facture : <b>'+fmt(resteFacture(f))+' DH</b>' : '<br>Cette facture est <b>intégralement soldée</b>.') : ''}
+    </div>
+    <div class="doc-sign">
+      <div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div></div>
+    </div>
+    ${piedPrint()}
+  </div>`;
+  window.print();
+}
+
+/* ---------- Lettre de change (traite / LCN) ---------- */
+function imprimerTraite(id){
+  const r = DB.reglements.find(x=>x.id===id); if(!r) return;
+  const f = factureById(r.factureId);
+  const cl = clientById(f?.clientId) || {};
+  const S = DB.societe;
+  $('#printArea').innerHTML = `
+  <div class="doc" ${docStyleAttr()}>
+    <div style="border:2px solid var(--teal); border-radius:8px; padding:18px; margin-top:10px">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start">
+        <div><h2 style="color:var(--teal); font-size:18px; text-transform:uppercase">Lettre de change</h2>
+          <p style="font-size:11px">Créée à ${esc(S.ville||'________')}, le ${dfr(r.date)}</p></div>
+        <div style="border:2px solid var(--teal); border-radius:6px; padding:8px 16px; text-align:center">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--teal)">Montant (DH)</div>
+          <div style="font-size:20px; font-weight:800">${fmt(r.montant)}</div>
+        </div>
+      </div>
+      <p style="margin-top:14px; font-size:13px">Contre la présente <b>lettre de change</b>, veuillez payer à l'ordre de
+        <b>${esc(S.nom)}</b> la somme de :</p>
+      <p style="border:1px solid #CBD5D2; border-radius:6px; padding:9px 12px; margin-top:6px; font-style:italic; font-size:13px">
+        <b>${montantEnLettres(r.montant)}</b></p>
+      <div style="display:flex; gap:16px; margin-top:14px; font-size:12px">
+        <div style="flex:1; border:1px solid #CBD5D2; border-radius:6px; padding:10px">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--teal); font-weight:700">Échéance</div>
+          <p style="font-size:15px; font-weight:800; margin-top:4px">${r.echeance?dfr(r.echeance):'____ / ____ / ________'}</p>
+        </div>
+        <div style="flex:2; border:1px solid #CBD5D2; border-radius:6px; padding:10px">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--teal); font-weight:700">Tiré (qui doit payer)</div>
+          <p><b>${esc(cl.nom||'—')}</b></p>
+          ${cl.adresse?`<p>${esc(cl.adresse)}${cl.ville?', '+esc(cl.ville):''}</p>`:''}
+          ${cl.ice?`<p>ICE : ${esc(cl.ice)}</p>`:''}
+          <p>RIB : ______________________________________</p>
+        </div>
+      </div>
+      <p style="margin-top:10px; font-size:11.5px">Valeur en : <b>Facture N° ${esc(f?.numero||'—')}</b>${r.reference?' — effet n° '+esc(r.reference):''}</p>
+      <div style="display:flex; gap:16px; margin-top:22px; font-size:11.5px; text-align:center">
+        <div style="flex:1"><b>Signature du tireur</b><div style="border-top:1px solid #999; margin-top:48px; padding-top:4px">${esc(S.nom)}</div></div>
+        <div style="flex:1"><b>Acceptation du tiré (signature)</b><div style="border-top:1px solid #999; margin-top:48px; padding-top:4px">&nbsp;</div></div>
+        <div style="flex:1"><b>Bon pour aval</b><div style="border-top:1px solid #999; margin-top:48px; padding-top:4px">&nbsp;</div></div>
+      </div>
+    </div>
+    ${piedPrint()}
+  </div>`;
+  window.print();
+}
+
+/* ---------- Relevé fournisseur ---------- */
+function imprimerReleveF(fournisseurId){
+  const fo = fournisseurById(fournisseurId); if(!fo) return;
+  const ev = [];
+  DB.fachats.filter(f=>f.clientId===fournisseurId).forEach(f=>{
+    ev.push({date:f.date, lbl:'Facture d\u2019achat '+f.numero, deb:calcDoc(f).ttc, cre:0});
+  });
+  DB.reglementsF.filter(r=> r.statut!=='impayé' && fachatById(r.factureId)?.clientId===fournisseurId).forEach(r=>{
+    ev.push({date:r.date, lbl:'Paiement '+r.mode+(r.reference?' n° '+r.reference:'')+' — '+(fachatById(r.factureId)?.numero||''), deb:0, cre:Number(r.montant)||0});
+  });
+  ev.sort((a,b)=> a.date.localeCompare(b.date));
+  let solde = 0;
+  const rows = ev.map(e=>{
+    solde = r2(solde + e.deb - e.cre);
+    return `<tr><td>${dfr(e.date)}</td><td>${esc(e.lbl)}</td>
+      <td class="num">${e.deb?fmt(e.deb):''}</td><td class="num">${e.cre?fmt(e.cre):''}</td>
+      <td class="num"><b>${fmt(solde)}</b></td></tr>`;
+  });
+  const metaHtml = `
+    <div class="blk"><div class="t">Fournisseur</div><p><b>${esc(fo.nom)}</b></p>
+      ${fo.adresse?`<p>${esc(fo.adresse)}${fo.ville?', '+esc(fo.ville):''}</p>`:''}${fo.ice?`<p>ICE : ${esc(fo.ice)}</p>`:''}</div>
+    <div class="blk" style="text-align:right"><div class="t">Solde à payer</div>
+      <p style="font-size:18px; font-weight:800; color:${solde>0.004?'#B7362C':'#1E7A4E'}">${fmt(solde)} DH</p></div>`;
+  const finHtml = `
+    ${ev.length?'':'<p style="margin-top:20px">Aucun mouvement enregistré pour ce fournisseur.</p>'}
+    <div class="doc-lettres">Solde arrêté à la somme de : <b>${montantEnLettres(Math.abs(solde))}</b>.</div>
+    <div class="doc-sign">
+      <div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div></div>
+    </div>`;
+  $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
+    titre:'Relevé fournisseur', sousTitre:`<p>Édité le ${dfr(today())}</p>`, metaHtml,
+    theadHtml:`<tr><th>Date</th><th>Libellé</th><th class="num" style="width:100px">Facturé</th>
+      <th class="num" style="width:100px">Payé</th><th class="num" style="width:110px">Solde dû</th></tr>`,
+    rows, finHtml, cap1:22, capN:28, finCost:8
+  }) + `</div>`;
+  window.print();
+}
+
+/* ---------- Lettres de relance graduées ---------- */
+function openRelance(clientId){
+  const cl = clientById(clientId); if(!cl) return;
+  openModal('Lettre de relance — '+cl.nom, `
+    <p style="font-size:.88rem; margin-bottom:12px">La lettre reprendra automatiquement toutes les factures <b>échues et non soldées</b> de ce client.</p>
+    <div class="field"><label>Niveau de relance</label>
+      <select id="rel_niv">
+        <option value="1">1 — Première relance (courtoise)</option>
+        <option value="2">2 — Deuxième relance (ferme)</option>
+        <option value="3">3 — Mise en demeure</option>
+      </select></div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="closeModal(); imprimerRelance('${clientId}', $('#rel_niv').value)">🖨 Imprimer la lettre</button>`);
+}
+function imprimerRelance(clientId, niv){
+  const cl = clientById(clientId); if(!cl) return;
+  const now = new Date(today());
+  const echues = DB.factures.filter(f=> f.clientId===clientId && resteFacture(f)>0.004 && new Date(f.echeance||f.date) < now);
+  if(!echues.length) return toast('Aucune facture échue pour ce client.', true);
+  const total = r2(echues.reduce((a,f)=>a+resteFacture(f),0));
+  const objets = {1:'Rappel — factures en attente de règlement', 2:'Deuxième relance — factures impayées', 3:'MISE EN DEMEURE DE PAYER'};
+  const corps = {
+    1:`Sauf erreur ou omission de notre part, les factures listées ci-dessous demeurent impayées à ce jour. Nous vous remercions de bien vouloir procéder à leur règlement dans les meilleurs délais. Si votre paiement a été effectué entre-temps, veuillez ne pas tenir compte de la présente.`,
+    2:`Malgré notre précédente relance, les factures listées ci-dessous demeurent impayées. Nous vous demandons de procéder à leur règlement sous huit (8) jours à compter de la réception de la présente. Nous restons à votre disposition pour convenir, le cas échéant, d'un échéancier de paiement.`,
+    3:`Malgré nos relances successives restées sans effet, nous vous mettons en demeure de régler la somme totale indiquée ci-dessous sous huit (8) jours à compter de la réception de la présente. À défaut, nous nous réservons le droit d'engager toute procédure de recouvrement, judiciaire ou autre, aux fins de préserver nos droits, et ce sans autre préavis.`
+  };
+  const rows = echues.map(f=>{
+    const retard = Math.floor((now - new Date(f.echeance||f.date))/864e5);
+    return `<tr><td><b>${esc(f.numero)}</b></td><td>${dfr(f.date)}</td><td>${f.echeance?dfr(f.echeance):'—'}</td>
+      <td class="num">${fmt(calcDoc(f).ttc)}</td><td class="num"><b>${fmt(resteFacture(f))}</b></td><td class="num">${retard} j</td></tr>`;
+  });
+  const metaHtml = `<div class="blk">
+    <div class="t">Destinataire</div>
+    <p><b>${esc(cl.nom)}</b></p>
+    ${cl.adresse?`<p>${esc(cl.adresse)}${cl.ville?', '+esc(cl.ville):''}</p>`:''}
+    ${cl.ice?`<p>ICE : ${esc(cl.ice)}</p>`:''}
+  </div>`;
+  const avantHtml = `
+    <p style="margin-top:6px"><b>Objet : ${objets[niv]}</b>${niv==='3'?'<br><small>Envoi recommandé avec accusé de réception</small>':''}</p>
+    <p style="margin-top:12px">Madame, Monsieur,</p>
+    <p style="margin-top:8px; text-align:justify; margin-bottom:12px">${corps[niv]}</p>`;
+  const finHtml = `
+    <div class="doc-tot"><div class="row grand"><span>TOTAL DÛ</span><span>${fmt(total)} DH</span></div></div>
+    <div class="doc-lettres">Soit la somme de : <b>${montantEnLettres(total)}</b>.</div>
+    <p style="margin-top:12px">Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
+    <div class="doc-sign"><div></div><div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div></div>`;
+  $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
+    titre: niv==='3'?'Mise en demeure':'Relance n° '+niv,
+    sousTitre:`<p>${esc(DB.societe.ville||'')}, le ${dfr(today())}</p>`,
+    metaHtml, avantHtml, avantCost:7,
+    theadHtml:`<tr><th>Facture</th><th>Date</th><th>Échéance</th><th class="num">Montant TTC</th><th class="num">Reste dû</th><th class="num">Retard</th></tr>`,
+    rows, finHtml, cap1:22, capN:27, finCost:11
+  }) + `</div>`;
+  window.print();
+}
+
+/* ---------- Inventaire physique ---------- */
+function ouvrirInventaire(depotId){
+  if(!DB.produits.length) return toast('Aucun produit à inventorier.', true);
+  const dep = depotId || DB.depots[0].id;
+  openModal('Inventaire physique — comptage', `
+    <div class="toolbar">
+      <select onchange="ouvrirInventaire(this.value)">${DB.depots.map(dp=>`<option value="${dp.id}" ${dp.id===dep?'selected':''}>${esc(dp.nom)}</option>`).join('')}</select>
+      <button class="btn" onclick="imprimerFeuilleComptage('${dep}')">🖨 Feuille de comptage</button>
+    </div>
+    <table class="list"><thead><tr><th>Réf.</th><th>Produit</th><th class="num">Stock théorique</th><th class="num" style="width:130px">Stock compté</th></tr></thead><tbody>
+    ${DB.produits.map(p=>`<tr><td>${esc(p.ref||'—')}</td><td>${esc(p.designation)}</td>
+      <td class="num">${fmt(p.stocks?.[dep]||0)}</td>
+      <td><input class="inv_q" data-pid="${p.id}" type="number" step="0.01" placeholder="${fmt(p.stocks?.[dep]||0)}" style="width:110px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; text-align:right"></td>
+    </tr>`).join('')}
+    </tbody></table>
+    <p style="margin-top:10px; font-size:.82rem; color:var(--muted)">Laissez vide les produits non comptés (ils ne seront pas ajustés). La validation ajuste le stock du dépôt et journalise l'inventaire.</p>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="validerInventaire('${dep}')">✓ Valider l'ajustement</button>`, true);
+}
+function validerInventaire(dep){
+  const lignes = [];
+  document.querySelectorAll('.inv_q').forEach(i=>{
+    if(i.value==='') return;
+    const p = produitById(i.dataset.pid);
+    const compte = parseFloat(i.value)||0;
+    const theorique = Number(p.stocks?.[dep])||0;
+    if(r2(compte-theorique)!==0) lignes.push({produitId:p.id, designation:p.designation, theorique, compte, ecart:r2(compte-theorique)});
+  });
+  if(!lignes.length){ closeModal(); return toast('Aucun écart constaté — stock conforme ✓'); }
+  const valEcart = r2(lignes.reduce((a,l)=> a + l.ecart*(Number(produitById(l.produitId)?.prixAchat)||0), 0));
+  if(!confirm(lignes.length+' produit(s) avec écart.\nValeur de l\u2019écart (prix d\u2019achat) : '+fmt(valEcart)+' DH.\nAjuster le stock ?')) return;
+  lignes.forEach(l=> setStock(produitById(l.produitId), dep, l.ecart));
+  DB.inventaires.push({id:uid(), date:today(), depotId:dep, lignes, valEcart});
+  saveDB(); closeModal(); render();
+  toast('Inventaire validé — '+lignes.length+' ajustement(s), écart '+fmt(valEcart)+' DH');
+}
+function imprimerFeuilleComptage(dep){
+  const dp = depotById(dep);
+  const rows = DB.produits.map(p=>`<tr><td>${esc(p.ref||'')}</td><td>${esc(p.designation)}</td>
+    <td class="num">${fmt(p.stocks?.[dep]||0)}</td><td style="border-bottom:1px solid #999">&nbsp;</td><td style="border-bottom:1px solid #999">&nbsp;</td></tr>`);
+  const finHtml = `
+    <div class="doc-sign">
+      <div><b>Compté par</b><div class="l">&nbsp;</div></div>
+      <div><b>Contrôlé par</b><div class="l">&nbsp;</div></div>
+    </div>`;
+  $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
+    titre:'Feuille de comptage',
+    sousTitre:`<p>Dépôt : <b>${esc(dp?.nom||'')}</b></p><p>Date : ${dfr(today())}</p>`,
+    theadHtml:`<tr><th style="width:80px">Réf.</th><th>Désignation</th><th class="num" style="width:80px">Théorique</th>
+      <th style="width:110px">Compté</th><th style="width:110px">Observations</th></tr>`,
+    rows, finHtml, cap1:26, capN:29, finCost:5
+  }) + `</div>`;
+  window.print();
+}
+
+/* ---------- Sécurité (verrouillage) ---------- */
+let ROLE = 'admin';
+const VUES_VENDEUR = ['dashboard','caisse','devis','proformas','commandes','factures','avoirs','retours','bl','reglements','clients','produits'];
+function hashPw(s){
+  let h = 5381;
+  for(const ch of String(s)) h = ((h*33) ^ ch.codePointAt(0)) >>> 0;
+  return 'h' + h.toString(36) + String(s).length;
+}
+function initSecurite(){
+  if(DB.securite?.actif && DB.securite.admin) afficherVerrou();
+  else { appliquerRole(); render(); }
+}
+function afficherVerrou(){
+  let ov = document.getElementById('lockScreen');
+  if(!ov){ ov = document.createElement('div'); ov.id = 'lockScreen'; document.body.appendChild(ov); }
+  ov.innerHTML = `
+    <div class="lock-card">
+      <h1>Tijara<span style="color:var(--saffron)">.</span></h1>
+      <p>Application verrouillée — ${esc(DB.societe.nom)}</p>
+      <input type="password" id="lockPw" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') deverrouiller()">
+      <button class="btn btn-accent" onclick="deverrouiller()" style="width:100%; justify-content:center">Déverrouiller</button>
+      <p id="lockErr" style="color:#FFB4A8; min-height:1.2em; font-size:.82rem"></p>
+    </div>`;
+  ov.style.display = 'flex';
+  setTimeout(()=>{ const i=document.getElementById('lockPw'); if(i) i.focus(); }, 50);
+}
+function deverrouiller(){
+  const h = hashPw(document.getElementById('lockPw').value);
+  if(h === DB.securite.admin) ROLE = 'admin';
+  else if(DB.securite.vendeur && h === DB.securite.vendeur) ROLE = 'vendeur';
+  else { document.getElementById('lockErr').textContent = 'Mot de passe incorrect.'; return; }
+  document.getElementById('lockScreen').style.display = 'none';
+  if(ROLE==='vendeur' && !VUES_VENDEUR.includes(currentView)) currentView = 'caisse';
+  appliquerRole(); syncNav(); render();
+  toast(ROLE==='vendeur' ? 'Session vendeur — accès limité aux ventes et à la caisse.' : 'Bienvenue ✓');
+}
+function appliquerRole(){
+  document.querySelectorAll('#nav button').forEach(b=>{
+    b.style.display = (ROLE==='vendeur' && !VUES_VENDEUR.includes(b.dataset.view)) ? 'none' : '';
+  });
+}
+function verrouiller(){ afficherVerrou(); }
+function saveSecurite(){
+  const actif = $('#sec_actif').checked;
+  const adm = $('#sec_admin').value, vnd = $('#sec_vendeur').value;
+  if(actif && !adm && !DB.securite.admin) return toast('Définissez le mot de passe administrateur.', true);
+  DB.securite.actif = actif;
+  if(adm) DB.securite.admin = hashPw(adm);
+  if(vnd) DB.securite.vendeur = hashPw(vnd);
+  if($('#sec_vendeur_off') && $('#sec_vendeur_off').checked) DB.securite.vendeur = '';
+  saveDB(); render(); toast('Sécurité mise à jour ✓');
+}
+
+
+/* ==================================================================
+   MODULE PAIE — Législation marocaine 2026 (LF 50-25, CGI, CNSS)
+   Barème IR mensuel, CNSS/AMO, frais pro, charges de famille 600 DH,
+   prime d'ancienneté (art. 350 Code du travail), HS, bulletins, journal
+   ================================================================== */
+
+/* ---------- Calculs de paie ---------- */
+function anneesAnciennete(dateEmbauche, periode){
+  if(!dateEmbauche) return 0;
+  const fin = new Date(periode + '-28');
+  return Math.max(0, Math.floor((fin - new Date(dateEmbauche)) / (365.25*864e5)));
+}
+function tauxAnciennete(annees){
+  const cfg = DB.paieConfig;
+  for(const b of cfg.anciennete) if(annees >= b.ans) return b.pct;
+  return 0;
+}
+function calcPaie(emp, s){
+  const cfg = DB.paieConfig;
+  const base = r2((Number(emp.salaireBase)||0) * (Number(s.jours)||26) / 26);
+  const tauxH = (Number(emp.salaireBase)||0) / (cfg.hMois||191);
+  const anc = tauxAnciennete(anneesAnciennete(emp.dateEmbauche, s.periode));
+  const primeAnc = r2(base * anc/100);
+  const hs = r2(tauxH * (1.25*(Number(s.hs25)||0) + 1.5*(Number(s.hs50)||0) + 2*(Number(s.hs100)||0)));
+  const primesImp = r2(Number(s.primesImp)||0);
+  const indemnites = r2(Number(s.indemnites)||0);
+  const sbi = r2(base + primeAnc + hs + primesImp);           // salaire brut imposable
+  const brutGlobal = r2(sbi + indemnites);
+  const cnss = r2(Math.min(sbi, cfg.cnssPlafond) * cfg.cnssSalTaux/100);
+  const amo = r2(sbi * cfg.amoSalTaux/100);
+  const cimrPct = Math.min(Number(emp.tauxCimr)||0, cfg.cimrMaxPct);
+  const cimr = r2(sbi * cimrPct/100);
+  const fp = sbi <= cfg.fpSeuilM
+    ? r2(Math.min(sbi * cfg.fp1Taux/100, cfg.fp1PlafM))
+    : r2(Math.min(sbi * cfg.fp2Taux/100, cfg.fp2PlafM));
+  const rni = r2(Math.max(0, sbi - cnss - amo - cimr - fp));
+  let irBrut = 0;
+  for(const t of cfg.bareme){
+    if(t.max===null || rni <= t.max){ irBrut = r2(Math.max(0, rni * t.taux/100 - t.somme)); break; }
+  }
+  const nbF = Math.min(Number(emp.nbCharges)||0, cfg.maxFam);
+  const ir = r2(Math.max(0, irBrut - nbF * cfg.chargeFam));
+  const avances = r2(Number(s.avances)||0);
+  const net = r2(brutGlobal - cnss - amo - cimr - ir - avances);
+  const patPS = r2(Math.min(sbi, cfg.cnssPlafond) * cfg.patPS/100);
+  const patAF = r2(sbi * cfg.patAF/100);
+  const patTFP = r2(sbi * cfg.patTFP/100);
+  const patAMO = r2(sbi * cfg.patAMO/100);
+  const patronales = r2(patPS + patAF + patTFP + patAMO);
+  return { base, anc, primeAnc, hs, primesImp, indemnites, sbi, brutGlobal, cnss, amo, cimrPct, cimr, fp, rni,
+    irBrut, chargesFam:r2(nbF*cfg.chargeFam), ir, avances, net, patPS, patAF, patTFP, patAMO, patronales,
+    cout:r2(brutGlobal + patronales) };
+}
+const bulletinDe = (empId, periode) => DB.paies.find(b=> b.employeId===empId && b.periode===periode);
+
+/* ---------- Vue Paie ---------- */
+let paieTab='employes', paieMois = today().slice(0,7), filtreEmp='';
+function vPaie(){
+  const corps = {employes:vPaieEmployes, bulletins:vPaieBulletins, journal:vPaieJournal, config:vPaieConfig}[paieTab]();
+  return `
+  <div class="page-head"><div><h2>Paie (RH)</h2><div class="sub">Conforme législation marocaine 2026 — barème IR LF 50-25, CNSS/AMO, SMIG ${fmt(DB.paieConfig.smigM)} DH</div></div></div>
+  <div class="tabs">
+    <button class="${paieTab==='employes'?'active':''}" onclick="paieTab='employes'; render()">Employés</button>
+    <button class="${paieTab==='bulletins'?'active':''}" onclick="paieTab='bulletins'; render()">Bulletins du mois</button>
+    <button class="${paieTab==='journal'?'active':''}" onclick="paieTab='journal'; render()">Journal &amp; déclarations</button>
+    <button class="${paieTab==='config'?'active':''}" onclick="paieTab='config'; render()">Paramètres légaux</button>
+  </div>
+  ${corps}`;
+}
+function vPaieEmployes(){
+  const arr = DB.employes.filter(e=> (e.nom+' '+(e.cin||'')+' '+(e.poste||'')).toLowerCase().includes(filtreEmp.toLowerCase()));
+  return `
+  <div class="toolbar">
+    <input type="search" placeholder="Rechercher (nom, CIN, poste)…" value="${esc(filtreEmp)}" oninput="filtreEmp=this.value; render()">
+    <button class="btn btn-primary" onclick="editEmploye()">+ Ajouter un employé</button>
+  </div>
+  <div class="card">${arr.length ? `
+    <table class="list"><thead><tr><th>Nom</th><th>CIN</th><th>N° CNSS</th><th>Poste</th><th>Embauche</th>
+      <th class="num">Salaire base</th><th class="num">Ancienneté</th><th>Statut</th><th></th></tr></thead><tbody>
+    ${arr.map(e=>{
+      const anc = tauxAnciennete(anneesAnciennete(e.dateEmbauche, today().slice(0,7)));
+      const sousSmig = Number(e.salaireBase) < DB.paieConfig.smigM - 0.01;
+      return `<tr>
+      <td><b>${esc(e.nom)}</b>${sousSmig?'<br><span class="badge b-red" title="Salaire de base inférieur au SMIG légal">⚠ sous SMIG</span>':''}</td>
+      <td>${esc(e.cin||'—')}</td><td>${esc(e.numCnss||'—')}</td><td>${esc(e.poste||'—')}</td>
+      <td>${dfr(e.dateEmbauche)}</td><td class="num">${fmtDH(e.salaireBase)}</td>
+      <td class="num">${anc?'<span class="badge b-blue">+'+anc+' %</span>':'—'}</td>
+      <td>${e.actif!==false?'<span class="badge b-green">actif</span>':'<span class="badge b-gray">sorti</span>'}</td>
+      <td class="actions">
+        <button class="btn btn-ghost btn-sm" title="Modifier" onclick="editEmploye('${e.id}')">✎</button>
+        <button class="btn btn-ghost btn-sm" title="Supprimer" onclick="delEmploye('${e.id}')" style="color:var(--red)">🗑</button>
+      </td></tr>`;}).join('')}
+    </tbody></table>` : '<div class="empty">Aucun employé. Ajoutez votre personnel pour générer les bulletins de paie.</div>'}
+  </div>`;
+}
+function editEmploye(id){
+  const e = id ? DB.employes.find(x=>x.id===id) : {actif:true, nbCharges:0, tauxCimr:0};
+  openModal((id?'Modifier':'Nouvel')+' employé', `
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1"><label>Nom complet <span class="req">*</span></label><input id="e_nom" value="${esc(e.nom||'')}"></div>
+      <div class="field"><label>CIN</label><input id="e_cin" value="${esc(e.cin||'')}"></div>
+      <div class="field"><label>N° immatriculation CNSS</label><input id="e_cnss" value="${esc(e.numCnss||'')}"></div>
+      <div class="field"><label>Poste / fonction</label><input id="e_poste" value="${esc(e.poste||'')}"></div>
+      <div class="field"><label>Date d'embauche</label><input id="e_emb" type="date" value="${e.dateEmbauche||''}"></div>
+      <div class="field"><label>Salaire de base mensuel (DH) <span class="req">*</span></label><input id="e_base" type="number" step="0.01" min="0" value="${e.salaireBase ?? ''}"></div>
+      <div class="field"><label>Personnes à charge (max ${DB.paieConfig.maxFam})</label><input id="e_charges" type="number" min="0" max="${DB.paieConfig.maxFam}" value="${e.nbCharges ?? 0}"></div>
+      <div class="field"><label>CIMR — taux salarial % (plafond légal ${DB.paieConfig.cimrMaxPct} %)</label><input id="e_cimr" type="number" step="0.01" min="0" max="${DB.paieConfig.cimrMaxPct}" value="${e.tauxCimr ?? 0}"></div>
+      <div class="field"><label>RIB (virement salaire)</label><input id="e_rib" value="${esc(e.rib||'')}"></div>
+      <div class="field"><label>Statut</label><select id="e_actif"><option value="1" ${e.actif!==false?'selected':''}>Actif</option><option value="0" ${e.actif===false?'selected':''}>Sorti</option></select></div>
+    </div>
+    <p style="margin-top:10px; font-size:.8rem; color:var(--muted)">La prime d'ancienneté légale (art. 350 du Code du travail : 5 % après 2 ans, 10 % après 5, 15 % après 12, 20 % après 20, 25 % après 25) est calculée automatiquement.</p>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveEmploye('${id||''}')">Enregistrer</button>`);
+}
+function saveEmploye(id){
+  const nom = $('#e_nom').value.trim();
+  const base = parseFloat($('#e_base').value);
+  if(!nom) return toast('Le nom est obligatoire.', true);
+  if(isNaN(base) || base < 0) return toast('Salaire de base invalide.', true);
+  if(base < DB.paieConfig.smigM - 0.01 && !confirm('⚠ Ce salaire est inférieur au SMIG légal ('+fmt(DB.paieConfig.smigM)+' DH). Enregistrer quand même ?')) return;
+  const o = { nom, cin:$('#e_cin').value.trim(), numCnss:$('#e_cnss').value.trim(), poste:$('#e_poste').value.trim(),
+    dateEmbauche:$('#e_emb').value, salaireBase:r2(base), nbCharges:parseInt($('#e_charges').value)||0,
+    tauxCimr:parseFloat($('#e_cimr').value)||0, rib:$('#e_rib').value.trim(), actif:$('#e_actif').value==='1' };
+  if(id) Object.assign(DB.employes.find(x=>x.id===id), o);
+  else { o.id = uid(); DB.employes.push(o); }
+  saveDB(); closeModal(); render(); toast('Employé enregistré ✓');
+}
+function delEmploye(id){
+  if(DB.paies.some(b=>b.employeId===id)) return toast('Des bulletins existent pour cet employé : marquez-le « Sorti » plutôt que de le supprimer.', true);
+  if(!confirm('Supprimer définitivement cet employé ?')) return;
+  DB.employes = DB.employes.filter(e=>e.id!==id);
+  saveDB(); render(); toast('Employé supprimé');
+}
+
+/* ---------- Bulletins ---------- */
+function vPaieBulletins(){
+  const actifs = DB.employes.filter(e=>e.actif!==false);
+  return `
+  <div class="toolbar"><input type="month" value="${paieMois}" onchange="paieMois=this.value; render()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px"></div>
+  <div class="card">${actifs.length ? `
+    <table class="list"><thead><tr><th>Employé</th><th class="num">Salaire base</th><th class="num">Brut</th>
+      <th class="num">Cotisations</th><th class="num">IR</th><th class="num">Net à payer</th><th>Bulletin</th><th></th></tr></thead><tbody>
+    ${actifs.map(e=>{
+      const b = bulletinDe(e.id, paieMois);
+      return `<tr>
+      <td><b>${esc(e.nom)}</b><br><small style="color:var(--muted)">${esc(e.poste||'')}</small></td>
+      <td class="num">${fmtDH(e.salaireBase)}</td>
+      ${b?`<td class="num">${fmt(b.calc.brutGlobal)}</td><td class="num">${fmt(r2(b.calc.cnss+b.calc.amo+b.calc.cimr))}</td>
+      <td class="num">${fmt(b.calc.ir)}</td><td class="num" style="font-weight:800; color:var(--green)">${fmtDH(b.calc.net)}</td>
+      <td><span class="badge b-green">établi · ${esc(b.numero)}</span></td>`
+      :'<td class="num" colspan="4" style="color:var(--muted)">—</td><td><span class="badge b-amber">à établir</span></td>'}
+      <td class="actions">
+        <button class="btn btn-ghost btn-sm" title="${b?'Modifier le bulletin':'Établir le bulletin'}" onclick="editBulletin('${e.id}')">${b?'✎':'＋'} Bulletin</button>
+        ${b?`<button class="btn btn-ghost btn-sm" title="Imprimer le bulletin" onclick="imprimerBulletin('${b.id}')">🖨</button>
+        <button class="btn btn-ghost btn-sm" title="Supprimer" onclick="delBulletin('${b.id}')" style="color:var(--red)">🗑</button>`:''}
+      </td></tr>`;}).join('')}
+    </tbody></table>` : '<div class="empty">Aucun employé actif. Ajoutez d\u2019abord vos employés.</div>'}
+  </div>`;
+}
+function editBulletin(empId){
+  const e = DB.employes.find(x=>x.id===empId);
+  const b = bulletinDe(empId, paieMois);
+  const s = b ? b.saisie : {jours:26, hs25:0, hs50:0, hs100:0, primesImp:0, indemnites:0, avances:0};
+  openModal('Bulletin de paie — '+e.nom+' — '+paieMois, `
+    <div class="grid3">
+      <div class="field"><label>Jours travaillés (base 26)</label><input id="b_jours" type="number" step="0.5" min="0" max="31" value="${s.jours}" oninput="apercuPaie('${empId}')"></div>
+      <div class="field"><label>HS majorées 25 % (heures)</label><input id="b_hs25" type="number" step="0.5" min="0" value="${s.hs25}" oninput="apercuPaie('${empId}')"></div>
+      <div class="field"><label>HS majorées 50 % (heures)</label><input id="b_hs50" type="number" step="0.5" min="0" value="${s.hs50}" oninput="apercuPaie('${empId}')"></div>
+      <div class="field"><label>HS majorées 100 % (heures)</label><input id="b_hs100" type="number" step="0.5" min="0" value="${s.hs100}" oninput="apercuPaie('${empId}')"></div>
+      <div class="field"><label>Primes imposables (DH)</label><input id="b_primes" type="number" step="0.01" min="0" value="${s.primesImp}" oninput="apercuPaie('${empId}')"></div>
+      <div class="field"><label>Indemnités exonérées (transport, panier…)</label><input id="b_indem" type="number" step="0.01" min="0" value="${s.indemnites}" oninput="apercuPaie('${empId}')"></div>
+      <div class="field"><label>Avances / acomptes à retenir (DH)</label><input id="b_avances" type="number" step="0.01" min="0" value="${s.avances}" oninput="apercuPaie('${empId}')"></div>
+    </div>
+    <p style="margin-top:8px; font-size:.78rem; color:var(--muted)">Indemnités exonérées : dans les limites admises par la DGI (transport justifié, panier, représentation…). Au-delà des plafonds, saisissez l'excédent en « primes imposables ».</p>
+    <div class="totaux" id="apercuPaie" style="width:420px"></div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveBulletin('${empId}')">${b?'Mettre à jour':'Établir'} le bulletin</button>`, true);
+  apercuPaie(empId);
+}
+function lireSaisiePaie(){
+  return { periode:paieMois, jours:parseFloat($('#b_jours').value)||0, hs25:parseFloat($('#b_hs25').value)||0,
+    hs50:parseFloat($('#b_hs50').value)||0, hs100:parseFloat($('#b_hs100').value)||0,
+    primesImp:parseFloat($('#b_primes').value)||0, indemnites:parseFloat($('#b_indem').value)||0,
+    avances:parseFloat($('#b_avances').value)||0 };
+}
+function apercuPaie(empId){
+  const e = DB.employes.find(x=>x.id===empId);
+  const c = calcPaie(e, lireSaisiePaie());
+  $('#apercuPaie').innerHTML = `
+    <div class="row"><span>Brut imposable ${c.anc?'(dont ancienneté +'+c.anc+' %)':''}</span><span>${fmt(c.sbi)}</span></div>
+    <div class="row"><span>CNSS ${DB.paieConfig.cnssSalTaux} % + AMO ${DB.paieConfig.amoSalTaux} %${c.cimr?' + CIMR':''}</span><span>− ${fmt(r2(c.cnss+c.amo+c.cimr))}</span></div>
+    <div class="row"><span>IR (après ${fmt(c.chargesFam)} DH de charges de famille)</span><span>− ${fmt(c.ir)}</span></div>
+    ${c.avances?`<div class="row"><span>Avances</span><span>− ${fmt(c.avances)}</span></div>`:''}
+    <div class="row grand"><span>NET À PAYER</span><span>${fmt(c.net)} DH</span></div>
+    <div class="row" style="color:var(--muted)"><span>Coût employeur (patronales ${fmt(c.patronales)})</span><span>${fmt(c.cout)}</span></div>`;
+}
+function saveBulletin(empId){
+  const e = DB.employes.find(x=>x.id===empId);
+  const saisie = lireSaisiePaie();
+  const calc = calcPaie(e, saisie);
+  let b = bulletinDe(empId, paieMois);
+  if(b){ b.saisie = saisie; b.calc = calc; b.emp = snapshotEmp(e); }
+  else DB.paies.push({ id:uid(), numero:nextNumero('paies'), employeId:empId, periode:paieMois, saisie, calc, emp:snapshotEmp(e) });
+  saveDB(); closeModal(); render(); toast('Bulletin enregistré ✓ — net à payer '+fmt(calc.net)+' DH');
+}
+function snapshotEmp(e){
+  return { nom:e.nom, cin:e.cin, numCnss:e.numCnss, poste:e.poste, dateEmbauche:e.dateEmbauche,
+    salaireBase:e.salaireBase, nbCharges:e.nbCharges, tauxCimr:e.tauxCimr, rib:e.rib };
+}
+function delBulletin(id){
+  if(!confirm('Supprimer ce bulletin ?')) return;
+  DB.paies = DB.paies.filter(b=>b.id!==id);
+  saveDB(); render(); toast('Bulletin supprimé');
+}
+
+/* ---------- Journal de paie & déclarations ---------- */
+function vPaieJournal(){
+  const bulletins = DB.paies.filter(b=>b.periode===paieMois);
+  const tot = bulletins.reduce((a,b)=>{
+    const c = b.calc;
+    a.brut+=c.brutGlobal; a.sbi+=c.sbi; a.cnss+=c.cnss; a.amo+=c.amo; a.cimr+=c.cimr; a.ir+=c.ir; a.net+=c.net;
+    a.patPS+=c.patPS; a.patAF+=c.patAF; a.patTFP+=c.patTFP; a.patAMO+=c.patAMO; a.cout+=c.cout;
+    return a;
+  }, {brut:0,sbi:0,cnss:0,amo:0,cimr:0,ir:0,net:0,patPS:0,patAF:0,patTFP:0,patAMO:0,cout:0});
+  Object.keys(tot).forEach(k=> tot[k]=r2(tot[k]));
+  const cnssAVerser = r2(tot.cnss + tot.amo + tot.patPS + tot.patAF + tot.patTFP + tot.patAMO);
+  const dejaComptabilise = DB.charges.some(c=>c.paieMois===paieMois);
+  return `
+  <div class="toolbar">
+    <input type="month" value="${paieMois}" onchange="paieMois=this.value; render()" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px">
+    <button class="btn btn-accent" onclick="exportJournalPaie()">⬇ Exporter CSV (Excel)</button>
+    <button class="btn ${dejaComptabilise?'':'btn-primary'}" onclick="comptabiliserPaie()" ${dejaComptabilise?'disabled title="Déjà comptabilisé pour ce mois"':''}>
+      ${dejaComptabilise?'✓ Comptabilisé en charges':'Comptabiliser le mois en charges'}</button>
+  </div>
+  <div class="chips">
+    <div class="chip">Masse salariale nette<b>${fmtDH(tot.net)}</b></div>
+    <div class="chip">CNSS + AMO à verser (Damancom)<b style="color:var(--red)">${fmtDH(cnssAVerser)}</b></div>
+    <div class="chip">IR à verser à la DGI (avant fin du mois suivant)<b style="color:var(--red)">${fmtDH(tot.ir)}</b></div>
+    <div class="chip">Coût employeur total<b>${fmtDH(tot.cout)}</b></div>
+  </div>
+  <div class="card">${bulletins.length ? `
+    <table class="list"><thead><tr><th>Employé</th><th class="num">Brut</th><th class="num">CNSS</th><th class="num">AMO</th>
+      <th class="num">IR</th><th class="num">Net</th><th class="num">Patronales</th><th class="num">Coût</th><th></th></tr></thead><tbody>
+    ${bulletins.map(b=>`<tr>
+      <td><b>${esc(b.emp.nom)}</b><br><small style="color:var(--muted)">${esc(b.numero)}</small></td>
+      <td class="num">${fmt(b.calc.brutGlobal)}</td><td class="num">${fmt(b.calc.cnss)}</td><td class="num">${fmt(b.calc.amo)}</td>
+      <td class="num">${fmt(b.calc.ir)}</td><td class="num" style="font-weight:700">${fmt(b.calc.net)}</td>
+      <td class="num">${fmt(b.calc.patronales)}</td><td class="num">${fmt(b.calc.cout)}</td>
+      <td class="actions"><button class="btn btn-ghost btn-sm" onclick="imprimerBulletin('${b.id}')">🖨</button></td></tr>`).join('')}
+    <tr style="background:#F4F7F6; font-weight:800"><td>TOTAUX (${bulletins.length} bulletin(s))</td>
+      <td class="num">${fmt(tot.brut)}</td><td class="num">${fmt(tot.cnss)}</td><td class="num">${fmt(tot.amo)}</td>
+      <td class="num">${fmt(tot.ir)}</td><td class="num">${fmt(tot.net)}</td>
+      <td class="num">${fmt(r2(tot.patPS+tot.patAF+tot.patTFP+tot.patAMO))}</td><td class="num">${fmt(tot.cout)}</td><td></td></tr>
+    </tbody></table>` : '<div class="empty">Aucun bulletin établi sur '+paieMois+'. Passez par l\u2019onglet « Bulletins du mois ».</div>'}
+  </div>`;
+}
+function exportJournalPaie(){
+  const bulletins = DB.paies.filter(b=>b.periode===paieMois);
+  if(!bulletins.length) return toast('Aucun bulletin sur la période.', true);
+  const num = v => (Number(v)||0).toFixed(2).replace('.', ',');
+  const q = s => '"' + String(s??'').replace(/"/g,'""') + '"';
+  const head = ['Employé','CIN','N° CNSS','Jours','Brut imposable','Indemnités exo.','Brut global','CNSS sal.','AMO sal.','CIMR','Frais pro','Net imposable','IR','Avances','NET À PAYER','CNSS pat.','Alloc. fam.','Taxe FP','AMO pat.','Coût employeur','RIB'];
+  const lines = [head.join(';')];
+  bulletins.forEach(b=>{
+    const c=b.calc, e=b.emp;
+    lines.push([q(e.nom), q(e.cin), q(e.numCnss), num(b.saisie.jours), num(c.sbi), num(c.indemnites), num(c.brutGlobal),
+      num(c.cnss), num(c.amo), num(c.cimr), num(c.fp), num(c.rni), num(c.ir), num(c.avances), num(c.net),
+      num(c.patPS), num(c.patAF), num(c.patTFP), num(c.patAMO), num(c.cout), q(e.rib)].join(';'));
+  });
+  const blob = new Blob(['\ufeff'+lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'journal-paie-'+paieMois+'.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Journal de paie exporté ✓');
+}
+function comptabiliserPaie(){
+  const bulletins = DB.paies.filter(b=>b.periode===paieMois);
+  if(!bulletins.length) return toast('Aucun bulletin sur la période.', true);
+  if(DB.charges.some(c=>c.paieMois===paieMois)) return toast('Ce mois est déjà comptabilisé.', true);
+  const cout = r2(bulletins.reduce((a,b)=>a+b.calc.cout,0));
+  const cpt = (DB.comptes.find(c=>c.type==='banque')||DB.comptes[0]).id;
+  if(!confirm('Enregistrer une charge « Salaires & CNSS » de '+fmt(cout)+' DH (coût employeur total '+paieMois+') ?')) return;
+  DB.charges.push({ id:uid(), date:paieMois+'-28', categorie:'Salaires & CNSS',
+    libelle:'Masse salariale '+paieMois+' ('+bulletins.length+' bulletin(s))', montant:cout, compteId:cpt, paieMois });
+  saveDB(); render(); toast('Masse salariale comptabilisée ✓');
+}
+
+/* ---------- Paramètres légaux ---------- */
+function vPaieConfig(){
+  const c = DB.paieConfig;
+  const f = (id,l,v,step) => `<div class="field"><label>${l}</label><input id="${id}" type="number" step="${step||0.01}" value="${v}"></div>`;
+  return `
+  <div class="card card-pad" style="max-width:900px">
+    <h3>Paramètres légaux — année ${c.annee}</h3>
+    <p style="font-size:.83rem; color:var(--muted); margin-bottom:14px">Valeurs préchargées selon la Loi de Finances 2026, le CGI et les taux CNSS en vigueur. Modifiez-les lorsque la législation change (nouvelle loi de finances, revalorisation du SMIG…).</p>
+    <h3>SMIG &amp; cotisations salariales</h3>
+    <div class="grid3">
+      ${f('pc_smig','SMIG mensuel (DH)',c.smigM)}
+      ${f('pc_h','Heures / mois (base HS)',c.hMois,1)}
+      ${f('pc_cnss','CNSS salariale (%)',c.cnssSalTaux)}
+      ${f('pc_plaf','Plafond CNSS (DH)',c.cnssPlafond)}
+      ${f('pc_amo','AMO salariale (%)',c.amoSalTaux)}
+      ${f('pc_cimrmax','CIMR déductible max (%)',c.cimrMaxPct)}
+    </div>
+    <h3 style="margin-top:16px">Cotisations patronales</h3>
+    <div class="grid3">
+      ${f('pc_ps','Prestations sociales (%)',c.patPS)}
+      ${f('pc_af','Allocations familiales (%)',c.patAF)}
+      ${f('pc_tfp','Taxe formation prof. (%)',c.patTFP)}
+      ${f('pc_amop','AMO patronale (%)',c.patAMO)}
+    </div>
+    <h3 style="margin-top:16px">Frais professionnels &amp; charges de famille (IR)</h3>
+    <div class="grid3">
+      ${f('pc_fp1','Taux 1 (%) — bas salaires',c.fp1Taux)}
+      ${f('pc_fp1p','Plafond mensuel taux 1 (DH)',c.fp1PlafM)}
+      ${f('pc_fps','Seuil mensuel brut (DH)',c.fpSeuilM)}
+      ${f('pc_fp2','Taux 2 (%) — au-delà',c.fp2Taux)}
+      ${f('pc_fp2p','Plafond mensuel taux 2 (DH)',c.fp2PlafM)}
+      ${f('pc_fam','Charge de famille (DH/mois/pers.)',c.chargeFam)}
+    </div>
+    <h3 style="margin-top:16px">Barème IR mensuel (revenu net imposable)</h3>
+    <table class="list" style="max-width:560px"><thead><tr><th>Tranche jusqu'à (DH/mois)</th><th class="num">Taux</th><th class="num">Somme à déduire</th></tr></thead><tbody>
+      ${c.bareme.map(t=>`<tr><td>${t.max===null?'au-delà':fmt(t.max)}</td><td class="num">${t.taux} %</td><td class="num">${fmt(t.somme)}</td></tr>`).join('')}
+    </tbody></table>
+    <div style="display:flex; gap:10px; margin-top:16px">
+      <button class="btn btn-primary" onclick="savePaieConfig()">Enregistrer les paramètres</button>
+      <button class="btn" onclick="if(confirm('Restaurer toutes les valeurs légales 2026 ?')){DB.paieConfig=paieDefauts2026(); saveDB(); render(); toast('Valeurs 2026 restaurées ✓');}">↺ Restaurer les valeurs légales 2026</button>
+    </div>
+    <p style="margin-top:12px; font-size:.78rem; color:var(--muted)">Prime d'ancienneté légale appliquée automatiquement : ${c.anciennete.slice().reverse().map(a=>a.pct+' % dès '+a.ans+' ans').join(' · ')}. Le barème IR se met à jour via « Restaurer » lors des futures lois de finances (ou sur demande de modification).</p>
+  </div>`;
+}
+function savePaieConfig(){
+  const c = DB.paieConfig;
+  c.smigM=parseFloat($('#pc_smig').value)||c.smigM; c.hMois=parseFloat($('#pc_h').value)||191;
+  c.cnssSalTaux=parseFloat($('#pc_cnss').value)||0; c.cnssPlafond=parseFloat($('#pc_plaf').value)||0;
+  c.amoSalTaux=parseFloat($('#pc_amo').value)||0; c.cimrMaxPct=parseFloat($('#pc_cimrmax').value)||0;
+  c.patPS=parseFloat($('#pc_ps').value)||0; c.patAF=parseFloat($('#pc_af').value)||0;
+  c.patTFP=parseFloat($('#pc_tfp').value)||0; c.patAMO=parseFloat($('#pc_amop').value)||0;
+  c.fp1Taux=parseFloat($('#pc_fp1').value)||0; c.fp1PlafM=parseFloat($('#pc_fp1p').value)||0;
+  c.fpSeuilM=parseFloat($('#pc_fps').value)||0; c.fp2Taux=parseFloat($('#pc_fp2').value)||0;
+  c.fp2PlafM=parseFloat($('#pc_fp2p').value)||0; c.chargeFam=parseFloat($('#pc_fam').value)||0;
+  saveDB(); render(); toast('Paramètres de paie enregistrés ✓');
+}
+
+/* ---------- Bulletin imprimable ---------- */
+function imprimerBulletin(id){
+  const b = DB.paies.find(x=>x.id===id); if(!b) return;
+  const e = b.emp, c = b.calc, cfg = DB.paieConfig;
+  const anc = anneesAnciennete(e.dateEmbauche, b.periode);
+  const lg = (lib, base, taux, gain, ret) => `<tr>
+    <td>${lib}</td><td class="num">${base!==''?fmt(base):''}</td><td class="num">${taux||''}</td>
+    <td class="num">${gain!==''?fmt(gain):''}</td><td class="num">${ret!==''?fmt(ret):''}</td></tr>`;
+  let rows = '';
+  rows += lg('Salaire de base ('+fmt(b.saisie.jours)+' j)', e.salaireBase, '', c.base, '');
+  if(c.primeAnc) rows += lg('Prime d\u2019ancienneté ('+anc+' ans)', c.base, c.anc+' %', c.primeAnc, '');
+  if(c.hs) rows += lg('Heures supplémentaires', '', '', c.hs, '');
+  if(c.primesImp) rows += lg('Primes imposables', '', '', c.primesImp, '');
+  if(c.indemnites) rows += lg('Indemnités exonérées', '', '', c.indemnites, '');
+  rows += lg('CNSS (part salariale)', Math.min(c.sbi,cfg.cnssPlafond), cfg.cnssSalTaux+' %', '', c.cnss);
+  rows += lg('AMO (part salariale)', c.sbi, cfg.amoSalTaux+' %', '', c.amo);
+  if(c.cimr) rows += lg('CIMR (retraite complémentaire)', c.sbi, c.cimrPct+' %', '', c.cimr);
+  rows += lg('Impôt sur le revenu (IR)', c.rni, '', '', c.ir);
+  if(c.avances) rows += lg('Avances et acomptes', '', '', '', c.avances);
+  $('#printArea').innerHTML = `
+  <div class="doc" ${docStyleAttr()}>
+    <div class="doc-head">
+      ${entetePrint()}
+      <div class="doc-title"><h2>Bulletin de paie</h2>
+        <p><b>N° ${esc(b.numero)}</b></p>
+        <p>Période : <b>${b.periode.split('-').reverse().join('/')}</b></p>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="blk">
+        <div class="t">Salarié</div>
+        <p><b>${esc(e.nom)}</b>${e.poste?' — '+esc(e.poste):''}</p>
+        <p>CIN : ${esc(e.cin||'—')} · N° CNSS : ${esc(e.numCnss||'—')}</p>
+        <p>Embauche : ${dfr(e.dateEmbauche)||'—'} (${anc} an(s)) · Personnes à charge : ${e.nbCharges||0}</p>
+        ${e.rib?`<p>RIB : ${esc(e.rib)}</p>`:''}
+      </div>
+    </div>
+    <table class="doc-lines">
+      <thead><tr><th>Rubrique</th><th class="num" style="width:90px">Base</th><th class="num" style="width:70px">Taux</th>
+        <th class="num" style="width:95px">Gains</th><th class="num" style="width:95px">Retenues</th></tr></thead>
+      <tbody>${rows}
+      <tr style="font-weight:800; background:#F2F5F4"><td colspan="3">TOTAUX</td>
+        <td class="num">${fmt(c.brutGlobal)}</td><td class="num">${fmt(r2(c.cnss+c.amo+c.cimr+c.ir+c.avances))}</td></tr>
+      </tbody>
+    </table>
+    <div class="doc-tot">
+      <div class="row"><span>Frais professionnels déduits (IR)</span><span>${fmt(c.fp)}</span></div>
+      <div class="row"><span>Net imposable</span><span>${fmt(c.rni)}</span></div>
+      <div class="row grand"><span>NET À PAYER</span><span>${fmt(c.net)} DH</span></div>
+    </div>
+    <div class="doc-lettres">Arrêté le présent bulletin à la somme nette de : <b>${montantEnLettres(c.net)}</b>.</div>
+    <div class="doc-notes"><b>Charges patronales (information)</b> — CNSS ${fmt(c.patPS)} · Allocations familiales ${fmt(c.patAF)} · Taxe FP ${fmt(c.patTFP)} · AMO ${fmt(c.patAMO)} — Coût global employeur : <b>${fmt(c.cout)} DH</b></div>
+    <div class="doc-sign">
+      <div><b>L'employeur</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div><b>Le salarié (pour réception)</b><div class="l">&nbsp;</div></div>
+    </div>
+    ${piedPrint()}
+  </div>`;
+  window.print();
+}
+
+/* ---------- Démarrage ---------- */
+initSecurite();
+</script>
+
+</body>
+</html>
