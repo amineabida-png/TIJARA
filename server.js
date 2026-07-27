@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 const INDEX = path.join(__dirname, 'index.html');
 const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const BUSINESS_FILE = path.join(DATA_DIR, 'business_data.json');
 
 // ── Helpers ──────────────────────────────────────────────────
 function ensureDataDir() { fs.mkdirSync(DATA_DIR, { recursive: true }); }
@@ -23,6 +24,21 @@ function loadUsers() {
 function saveUsers(users) {
   ensureDataDir();
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+// Sauvegarde automatique / synchronisation multi-appareils : une entrée par
+// compte utilisateur, { data: <JSON stringifié de DB>, updatedAt }.
+function loadBusinessData() {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(BUSINESS_FILE)) return JSON.parse(fs.readFileSync(BUSINESS_FILE, 'utf8'));
+  } catch(e) {}
+  return {};
+}
+
+function saveBusinessData(map) {
+  ensureDataDir();
+  fs.writeFileSync(BUSINESS_FILE, JSON.stringify(map));
 }
 
 function hashPassword(password) {
@@ -56,7 +72,9 @@ function getSubscriptionInfo(user) {
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', chunk => { body += chunk; if (body.length > 1e6) reject(new Error('Too large')); });
+    // Limite large : les données métier synchronisées (/api/data) embarquent le
+    // logo et le cachet de la société en images base64, potentiellement plusieurs Mo.
+    req.on('data', chunk => { body += chunk; if (body.length > 20e6) reject(new Error('Too large')); });
     req.on('end', () => {
       try { resolve(JSON.parse(body)); } catch(e) { resolve({}); }
     });
@@ -457,6 +475,25 @@ const server = http.createServer(async (req, res) => {
   if (pathname.startsWith('/api/')) {
     const sessionUser = getSessionUser(req);
     if (!sessionUser) return sendJSON(res, 401, { error: 'Non authentifié' });
+
+    // GET /api/data — récupérer les données métier synchronisées du compte connecté
+    // (sauvegarde automatique / accès depuis n'importe quel appareil)
+    if (pathname === '/api/data' && req.method === 'GET') {
+      const biz = loadBusinessData();
+      const rec = biz[sessionUser.id];
+      return sendJSON(res, 200, { data: rec ? rec.data : null, updatedAt: rec ? rec.updatedAt : null });
+    }
+
+    // PUT /api/data — sauvegarder les données métier du compte connecté
+    if (pathname === '/api/data' && req.method === 'PUT') {
+      const body = await parseBody(req);
+      if (typeof body.data !== 'string') return sendJSON(res, 400, { error: 'data (string) requis' });
+      const biz = loadBusinessData();
+      biz[sessionUser.id] = { data: body.data, updatedAt: new Date().toISOString() };
+      saveBusinessData(biz);
+      return sendJSON(res, 200, { ok: true, updatedAt: biz[sessionUser.id].updatedAt });
+    }
+
     if (sessionUser.role !== 'super') return sendJSON(res, 403, { error: 'Accès refusé' });
 
     // POST /api/users — créer un utilisateur
