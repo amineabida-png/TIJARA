@@ -205,9 +205,14 @@ table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; fon
 .doc-meta .blk{border:1px solid #CBD5D2; border-radius:8px; padding:10px 14px; min-width:250px}
 .doc-meta .blk .t{font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--teal); font-weight:700; margin-bottom:5px}
 .doc-meta .blk p{font-size:12px; margin:1.5px 0}
-table.doc-lines{width:100%; border-collapse:collapse; margin-top:6px; font-size:12px}
+/* table-layout:fixed — Safari/iOS calcule autrement la largeur des colonnes
+   sans largeur explicite (« Désignation ») que Chrome/Edge : sans ça, la
+   colonne s'écrase en bande étroite et le texte s'empile mot par mot. En
+   layout fixe, la première ligne (largeurs des th) fait foi partout, et
+   « Désignation » récupère simplement tout l'espace restant. */
+table.doc-lines{width:100%; border-collapse:collapse; margin-top:6px; font-size:12px; table-layout:fixed}
 table.doc-lines th{background:var(--teal); color:#fff; padding:7px 9px; text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px}
-table.doc-lines td{padding:7px 9px; border-bottom:1px solid #DDE4E2}
+table.doc-lines td{padding:7px 9px; border-bottom:1px solid #DDE4E2; word-wrap:break-word; overflow-wrap:break-word}
 table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
 .doc-tot{margin-left:auto; width:300px; margin-top:12px; font-size:12.5px}
 .doc-tot .row{display:flex; justify-content:space-between; padding:4px 8px}
@@ -1763,7 +1768,7 @@ function imprimerReleve(clientId){
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
     titre:'Relevé de compte', sousTitre:`<p>Édité le ${dfr(today())}</p>`, metaHtml,
-    theadHtml:`<tr><th>Date</th><th>Libellé</th><th class="num" style="width:100px">Débit</th>
+    theadHtml:`<tr><th style="width:80px">Date</th><th>Libellé</th><th class="num" style="width:100px">Débit</th>
       <th class="num" style="width:100px">Crédit</th><th class="num" style="width:110px">Solde</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
@@ -2398,7 +2403,7 @@ function imprimerReleveF(fournisseurId){
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
     titre:'Relevé fournisseur', sousTitre:`<p>Édité le ${dfr(today())}</p>`, metaHtml,
-    theadHtml:`<tr><th>Date</th><th>Libellé</th><th class="num" style="width:100px">Facturé</th>
+    theadHtml:`<tr><th style="width:80px">Date</th><th>Libellé</th><th class="num" style="width:100px">Facturé</th>
       <th class="num" style="width:100px">Payé</th><th class="num" style="width:110px">Solde dû</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
@@ -2455,7 +2460,7 @@ function imprimerRelance(clientId, niv){
     titre: niv==='3'?'Mise en demeure':'Relance n° '+niv,
     sousTitre:`<p>${esc(DB.societe.ville||'')}, le ${dfr(today())}</p>`,
     metaHtml, avantHtml, avantCost:7,
-    theadHtml:`<tr><th>Facture</th><th>Date</th><th>Échéance</th><th class="num">Montant TTC</th><th class="num">Reste dû</th><th class="num">Retard</th></tr>`,
+    theadHtml:`<tr><th style="width:130px">Facture</th><th style="width:90px">Date</th><th style="width:90px">Échéance</th><th class="num" style="width:110px">Montant TTC</th><th class="num" style="width:100px">Reste dû</th><th class="num" style="width:80px">Retard</th></tr>`,
     rows, finHtml, cap1:22, capN:27, finCost:11
   }) + `</div>`;
   window.print();
