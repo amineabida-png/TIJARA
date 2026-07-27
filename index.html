@@ -209,7 +209,7 @@ table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
 .doc-lettres{margin-top:14px; border:1px solid #CBD5D2; border-left:4px solid var(--saffron); border-radius:6px; padding:9px 13px; font-size:12px; font-style:italic}
 .doc-notes{margin-top:12px; font-size:11.5px; color:#333; white-space:pre-wrap}
 .doc-sign{display:flex; justify-content:space-between; margin-top:34px; font-size:12px}
-.doc-sign div{width:220px; text-align:center}
+.doc-sign div{width:260px; text-align:center}
 .doc-sign .l{border-top:1px solid #999; margin-top:55px; padding-top:5px; color:#555}
 .doc-foot{margin-top:auto; border-top:2px solid var(--teal); padding-top:5px; text-align:center; font-size:10px; color:#444; line-height:1.5}
 @media(max-width:900px){
@@ -1527,7 +1527,7 @@ function entetePrint(){
 function cachetImgHtml(){
   const c = DB.societe.cachet;
   if(!c) return '';
-  return `<img src="${c}" alt="" style="display:block; max-height:65px; max-width:160px; margin:4px auto 0; position:relative">`;
+  return `<img src="${c}" alt="" style="display:block; max-height:98px; max-width:240px; margin:4px auto 0; position:relative">`;
 }
 function piedPrint(){
   const S = DB.societe;
