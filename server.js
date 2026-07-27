@@ -3,44 +3,43 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { initDb, loadUsers, saveUsers, loadBusinessDataFor, saveBusinessDataFor, usersCount } = require('./db');
 
 const PORT = process.env.PORT || 3000;
 const INDEX = path.join(__dirname, 'index.html');
-const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const BUSINESS_FILE = path.join(DATA_DIR, 'business_data.json');
+
+// Ancien stockage (fichiers sur le volume Railway), conservé uniquement pour
+// la migration automatique unique vers Postgres au premier démarrage.
+const LEGACY_DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
+const LEGACY_USERS_FILE = path.join(LEGACY_DATA_DIR, 'users.json');
+const LEGACY_BUSINESS_FILE = path.join(LEGACY_DATA_DIR, 'business_data.json');
+
+async function migrateLegacyFileData() {
+  if ((await usersCount()) > 0) return; // déjà en base, rien à migrer
+
+  if (fs.existsSync(LEGACY_USERS_FILE)) {
+    try {
+      const legacyUsers = JSON.parse(fs.readFileSync(LEGACY_USERS_FILE, 'utf8'));
+      if (Array.isArray(legacyUsers) && legacyUsers.length) {
+        await saveUsers(legacyUsers);
+        console.log(`↪ Migration : ${legacyUsers.length} compte(s) importé(s) depuis l'ancien fichier users.json`);
+      }
+    } catch (e) { console.error('Échec migration users.json', e); }
+  }
+
+  if (fs.existsSync(LEGACY_BUSINESS_FILE)) {
+    try {
+      const legacyBiz = JSON.parse(fs.readFileSync(LEGACY_BUSINESS_FILE, 'utf8'));
+      const entries = Object.entries(legacyBiz || {});
+      for (const [userId, rec] of entries) {
+        await saveBusinessDataFor(Number(userId), rec.data, rec.updatedAt);
+      }
+      if (entries.length) console.log(`↪ Migration : donnée(s) métier importée(s) pour ${entries.length} compte(s)`);
+    } catch (e) { console.error('Échec migration business_data.json', e); }
+  }
+}
 
 // ── Helpers ──────────────────────────────────────────────────
-function ensureDataDir() { fs.mkdirSync(DATA_DIR, { recursive: true }); }
-
-function loadUsers() {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(USERS_FILE)) return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-  } catch(e) {}
-  return [];
-}
-
-function saveUsers(users) {
-  ensureDataDir();
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-// Sauvegarde automatique / synchronisation multi-appareils : une entrée par
-// compte utilisateur, { data: <JSON stringifié de DB>, updatedAt }.
-function loadBusinessData() {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(BUSINESS_FILE)) return JSON.parse(fs.readFileSync(BUSINESS_FILE, 'utf8'));
-  } catch(e) {}
-  return {};
-}
-
-function saveBusinessData(map) {
-  ensureDataDir();
-  fs.writeFileSync(BUSINESS_FILE, JSON.stringify(map));
-}
-
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password + 'tijara_salt_2026').digest('hex');
 }
@@ -82,33 +81,14 @@ function parseBody(req) {
   });
 }
 
-function getBasicAuth(req) {
-  const header = req.headers['authorization'] || '';
-  if (!header.startsWith('Basic ')) return null;
-  try {
-    const [user, ...rest] = Buffer.from(header.slice(6), 'base64').toString().split(':');
-    return { username: user, password: rest.join(':') };
-  } catch(e) { return null; }
-}
-
-function checkBasicAuth(req) {
-  const creds = getBasicAuth(req);
-  if (!creds) return null;
-  const users = loadUsers();
-  const user = users.find(u => u.username === creds.username);
-  if (!user) return null;
-  if (user.password !== hashPassword(creds.password)) return null;
-  return user;
-}
-
-function getSessionUser(req) {
+async function getSessionUser(req) {
   // Session via cookie
   const cookies = req.headers['cookie'] || '';
   const match = cookies.match(/tijara_session=([^;]+)/);
   if (!match) return null;
   try {
     const session = JSON.parse(Buffer.from(match[1], 'base64').toString());
-    const users = loadUsers();
+    const users = await loadUsers();
     const user = users.find(u => u.id === session.id && u.username === session.username);
     return user || null;
   } catch(e) { return null; }
@@ -136,14 +116,13 @@ function sendRedirect(res, location) {
 }
 
 // ── Init utilisateurs ─────────────────────────────────────────
-function initUsers() {
-  ensureDataDir();
-  const users = loadUsers();
+async function initUsers() {
+  const users = await loadUsers();
   if (users.length === 0) {
     const superPass = process.env.SUPER_PASSWORD || 'TijaraSuper2026!';
     const adminPass = process.env.TIJARA_PASSWORD || process.env.ADMIN_PASSWORD || 'TijaraAdmin2026!';
     const adminUser = process.env.TIJARA_USER || process.env.ADMIN_USER || 'admin';
-    saveUsers([
+    await saveUsers([
       {
         id: 1,
         username: 'super',
@@ -191,7 +170,7 @@ function initUsers() {
       su.password = hashPassword(process.env.SUPER_PASSWORD);
       changed = true;
     }
-    if (changed) saveUsers(users);
+    if (changed) await saveUsers(users);
   }
 }
 
@@ -245,8 +224,8 @@ function subscriptionExpiredPage(user) {
 }
 
 // ── Super Admin page ──────────────────────────────────────────
-function superAdminPage() {
-  const users = loadUsers();
+async function superAdminPage() {
+  const users = await loadUsers();
   const adminUsers = users.filter(u => u.role !== 'super');
   const now = Date.now();
 
@@ -473,14 +452,13 @@ const server = http.createServer(async (req, res) => {
 
   // ── API Routes ─────────────────────────────────────────────
   if (pathname.startsWith('/api/')) {
-    const sessionUser = getSessionUser(req);
+    const sessionUser = await getSessionUser(req);
     if (!sessionUser) return sendJSON(res, 401, { error: 'Non authentifié' });
 
     // GET /api/data — récupérer les données métier synchronisées du compte connecté
     // (sauvegarde automatique / accès depuis n'importe quel appareil)
     if (pathname === '/api/data' && req.method === 'GET') {
-      const biz = loadBusinessData();
-      const rec = biz[sessionUser.id];
+      const rec = await loadBusinessDataFor(sessionUser.id);
       return sendJSON(res, 200, { data: rec ? rec.data : null, updatedAt: rec ? rec.updatedAt : null });
     }
 
@@ -488,10 +466,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/data' && req.method === 'PUT') {
       const body = await parseBody(req);
       if (typeof body.data !== 'string') return sendJSON(res, 400, { error: 'data (string) requis' });
-      const biz = loadBusinessData();
-      biz[sessionUser.id] = { data: body.data, updatedAt: new Date().toISOString() };
-      saveBusinessData(biz);
-      return sendJSON(res, 200, { ok: true, updatedAt: biz[sessionUser.id].updatedAt });
+      const updatedAt = new Date().toISOString();
+      await saveBusinessDataFor(sessionUser.id, body.data, updatedAt);
+      return sendJSON(res, 200, { ok: true, updatedAt });
     }
 
     if (sessionUser.role !== 'super') return sendJSON(res, 403, { error: 'Accès refusé' });
@@ -502,7 +479,7 @@ const server = http.createServer(async (req, res) => {
       const { username, nom, email, password, subscriptionType } = body;
       if (!username || !nom || !email || !password) return sendJSON(res, 400, { error: 'Champs manquants' });
       if (password.length < 6) return sendJSON(res, 400, { error: 'Mot de passe trop court (min 6 caractères)' });
-      const users = loadUsers();
+      const users = await loadUsers();
       if (users.find(u => u.username === username)) return sendJSON(res, 400, { error: 'Identifiant déjà utilisé' });
       if (users.find(u => u.email === email)) return sendJSON(res, 400, { error: 'Email déjà utilisé' });
       const type = subscriptionType || 'trial_30';
@@ -516,18 +493,18 @@ const server = http.createServer(async (req, res) => {
         subscriptionEnd: calcSubscriptionEnd(type)
       };
       users.push(newUser);
-      saveUsers(users);
+      await saveUsers(users);
       return sendJSON(res, 200, { ok: true });
     }
 
     // DELETE /api/users/:id — supprimer un utilisateur
     if (pathname.startsWith('/api/users/') && req.method === 'DELETE') {
       const id = parseInt(pathname.split('/')[3]);
-      const users = loadUsers();
+      const users = await loadUsers();
       const user = users.find(u => u.id === id);
       if (!user) return sendJSON(res, 404, { error: 'Utilisateur non trouvé' });
       if (user.role === 'super') return sendJSON(res, 400, { error: 'Impossible de supprimer le super admin' });
-      saveUsers(users.filter(u => u.id !== id));
+      await saveUsers(users.filter(u => u.id !== id));
       return sendJSON(res, 200, { ok: true });
     }
 
@@ -536,11 +513,11 @@ const server = http.createServer(async (req, res) => {
       const id = parseInt(pathname.split('/')[3]);
       const body = await parseBody(req);
       if (!body.password || body.password.length < 6) return sendJSON(res, 400, { error: 'Mot de passe trop court' });
-      const users = loadUsers();
+      const users = await loadUsers();
       const user = users.find(u => u.id === id);
       if (!user) return sendJSON(res, 404, { error: 'Utilisateur non trouvé' });
       user.password = hashPassword(body.password);
-      saveUsers(users);
+      await saveUsers(users);
       return sendJSON(res, 200, { ok: true });
     }
 
@@ -549,12 +526,12 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req);
       const { userId, type } = body;
       if (!['trial_30','annual','lifetime'].includes(type)) return sendJSON(res, 400, { error: 'Type invalide' });
-      const users = loadUsers();
+      const users = await loadUsers();
       const user = users.find(u => u.id === parseInt(userId));
       if (!user) return sendJSON(res, 404, { error: 'Utilisateur non trouvé' });
       user.subscriptionType = type;
       user.subscriptionEnd = calcSubscriptionEnd(type);
-      saveUsers(users);
+      await saveUsers(users);
       return sendJSON(res, 200, { ok: true, subscriptionEnd: user.subscriptionEnd });
     }
 
@@ -577,7 +554,7 @@ const server = http.createServer(async (req, res) => {
     const params = new URLSearchParams(body);
     const username = params.get('username');
     const password = params.get('password');
-    const users = loadUsers();
+    const users = await loadUsers();
     const user = users.find(u => u.username === username);
     if (!user || user.password !== hashPassword(password)) {
       return sendHTML(res, loginPage('Identifiant ou mot de passe incorrect'));
@@ -606,13 +583,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   // ── Protected Routes ───────────────────────────────────────
-  const sessionUser = getSessionUser(req);
+  const sessionUser = await getSessionUser(req);
 
   // /superadmin — super admin panel
   if (pathname === '/superadmin') {
     if (!sessionUser) return sendRedirect(res, '/login');
     if (sessionUser.role !== 'super') return sendRedirect(res, '/');
-    return sendHTML(res, superAdminPage());
+    return sendHTML(res, await superAdminPage());
   }
 
   // /subscription-expired
@@ -659,9 +636,16 @@ const server = http.createServer(async (req, res) => {
   res.end();
 });
 
-initUsers();
-server.listen(PORT, () => {
-  console.log('✅ TIJARA démarré sur le port ' + PORT);
-  console.log('👑 Super Admin : username=super');
-  console.log('🔑 Connectez-vous sur /login');
+(async () => {
+  await initDb();
+  await migrateLegacyFileData();
+  await initUsers();
+  server.listen(PORT, () => {
+    console.log('✅ TIJARA démarré sur le port ' + PORT);
+    console.log('👑 Super Admin : username=super');
+    console.log('🔑 Connectez-vous sur /login');
+  });
+})().catch(err => {
+  console.error('Échec du démarrage du serveur', err);
+  process.exit(1);
 });
