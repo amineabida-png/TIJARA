@@ -348,7 +348,7 @@ function defaultDB(){
   return {
     societe:{ nom:'Ma Société SARL', activite:'Négoce et distribution', adresse:'12, Rue Exemple, Quartier Industriel', ville:'Casablanca',
       tel:'05 22 00 00 00', email:'contact@masociete.ma', ice:'', idf:'', rc:'', patente:'', cnss:'', capital:'100 000,00', rib:'', tvaDefaut:20,
-      logo:'', docStyle:{couleur:'#0C4A46', accent:'#D9922E', police:'Segoe UI'} },
+      logo:'', cachet:'', docStyle:{couleur:'#0C4A46', accent:'#D9922E', police:'Segoe UI'} },
     depots:[{id:'dep1', nom:'Dépôt principal'}],
     clients:[], fournisseurs:[], produits:[],
     devis:[], proformas:[], commandes:[], factures:[], avoirs:[], retours:[], bl:[], bc:[], fachats:[], retoursF:[],
@@ -1522,6 +1522,11 @@ function entetePrint(){
     <p>${S.tel?'Tél : '+esc(S.tel):''}${S.email?' — '+esc(S.email):''}</p>
   </div>`;
 }
+function cachetImgHtml(){
+  const c = DB.societe.cachet;
+  if(!c) return '';
+  return `<img src="${c}" alt="" style="display:block; max-height:65px; max-width:160px; margin:4px auto 0; position:relative">`;
+}
 function piedPrint(){
   const S = DB.societe;
   const mentions = [
@@ -1635,7 +1640,7 @@ function imprimer(type, id){
       <b>${montantEnLettres(c.ttc)} TTC</b>.</div>`}
     ${d.notes?`<div class="doc-notes"><b>Notes :</b> ${esc(d.notes)}</div>`:''}
     <div class="doc-sign">
-      <div><b>${signGauche}</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div><b>${signGauche}</b>${signGauche==='Cachet et signature'?cachetImgHtml():''}<div class="l">${esc(DB.societe.nom)}</div></div>
       <div><b>${signDroite}</b><div class="l">&nbsp;</div></div>
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` +
@@ -1673,7 +1678,7 @@ function imprimerReleve(clientId){
     ${ev.length?'':'<p style="margin-top:20px">Aucun mouvement enregistré pour ce client.</p>'}
     <div class="doc-lettres">Solde arrêté à la somme de : <b>${montantEnLettres(Math.abs(solde))}${solde<-0.004?' (en faveur du client)':''}</b>.</div>
     <div class="doc-sign">
-      <div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div><b>Cachet et signature</b>${cachetImgHtml()}<div class="l">${esc(DB.societe.nom)}</div></div>
       <div></div>
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
@@ -1733,6 +1738,14 @@ function vParametres(){
       ${S.logo?`<img src="${S.logo}" alt="Logo" style="max-height:60px; max-width:200px; border:1px solid var(--line); border-radius:8px; padding:6px; background:#fff">`:'<span style="color:var(--muted); font-size:.85rem">Aucun logo — il apparaîtra en haut de tous vos documents.</span>'}
       <label class="btn">📷 ${S.logo?'Changer le logo':'Ajouter un logo'} <input type="file" accept="image/*" style="display:none" onchange="uploadLogo(this)"></label>
       ${S.logo?'<button class="btn btn-danger" onclick="removeLogo()">Retirer</button>':''}
+    </div>
+
+    <h3 style="margin-top:22px">Cachet de la société</h3>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:10px">Photographiez ou scannez votre tampon officiel (idéalement sur fond blanc). Il sera automatiquement positionné dans la zone « Cachet et signature » de tous vos devis, factures, avoirs, bons, reçus et relevés.</p>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+      ${S.cachet?`<img src="${S.cachet}" alt="Cachet" style="max-height:70px; max-width:170px; border:1px solid var(--line); border-radius:8px; padding:6px; background:#fff">`:'<span style="color:var(--muted); font-size:.85rem">Aucun cachet — la zone de signature restera vierge pour un tampon manuel.</span>'}
+      <label class="btn">🖋 ${S.cachet?'Changer le cachet':'Ajouter un cachet'} <input type="file" accept="image/*" style="display:none" onchange="uploadCachet(this)"></label>
+      ${S.cachet?'<button class="btn btn-danger" onclick="removeCachet()">Retirer</button>':''}
     </div>
 
     <div style="margin-top:20px"><button class="btn btn-primary" onclick="saveSociete()">Enregistrer les paramètres</button></div>
@@ -1822,6 +1835,27 @@ function uploadLogo(input){
 function removeLogo(){
   DB.societe.logo = '';
   saveDB(); render(); toast('Logo retiré');
+}
+function uploadCachet(input){
+  const file = input.files[0]; if(!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 260/img.height, 260/img.width);
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width*scale); cv.height = Math.round(img.height*scale);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      DB.societe.cachet = cv.toDataURL('image/png');
+      saveDB(); render(); toast('Cachet enregistré ✓');
+    };
+    img.src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+function removeCachet(){
+  DB.societe.cachet = '';
+  saveDB(); render(); toast('Cachet retiré');
 }
 function addDepot(){
   const nom = $('#newDep').value.trim();
@@ -2198,7 +2232,7 @@ function imprimerRecu(id){
       ${f ? (resteFacture(f)>0.004 ? '<br>Reste dû sur cette facture : <b>'+fmt(resteFacture(f))+' DH</b>' : '<br>Cette facture est <b>intégralement soldée</b>.') : ''}
     </div>
     <div class="doc-sign">
-      <div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div><b>Cachet et signature</b>${cachetImgHtml()}<div class="l">${esc(DB.societe.nom)}</div></div>
       <div></div>
     </div>
     ${piedPrint()}
@@ -2279,7 +2313,7 @@ function imprimerReleveF(fournisseurId){
     ${ev.length?'':'<p style="margin-top:20px">Aucun mouvement enregistré pour ce fournisseur.</p>'}
     <div class="doc-lettres">Solde arrêté à la somme de : <b>${montantEnLettres(Math.abs(solde))}</b>.</div>
     <div class="doc-sign">
-      <div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div>
+      <div><b>Cachet et signature</b>${cachetImgHtml()}<div class="l">${esc(DB.societe.nom)}</div></div>
       <div></div>
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
@@ -2336,7 +2370,7 @@ function imprimerRelance(clientId, niv){
     <div class="doc-tot"><div class="row grand"><span>TOTAL DÛ</span><span>${fmt(total)} DH</span></div></div>
     <div class="doc-lettres">Soit la somme de : <b>${montantEnLettres(total)}</b>.</div>
     <p style="margin-top:12px">Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
-    <div class="doc-sign"><div></div><div><b>Cachet et signature</b><div class="l">${esc(DB.societe.nom)}</div></div></div>`;
+    <div class="doc-sign"><div></div><div><b>Cachet et signature</b>${cachetImgHtml()}<div class="l">${esc(DB.societe.nom)}</div></div></div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` + pagesDoc({
     titre: niv==='3'?'Mise en demeure':'Relance n° '+niv,
     sousTitre:`<p>${esc(DB.societe.ville||'')}, le ${dfr(today())}</p>`,
