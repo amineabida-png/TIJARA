@@ -186,7 +186,7 @@ table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; fon
 /* ---------- Rendu des documents imprimables ---------- */
 #printArea{display:none}
 @media print{
-  @page{size:A4; margin:3mm 6mm}
+  @page{size:A4; margin:2mm 6mm}
   body{background:#fff}
   /* Sans ça, iOS Safari et Chrome Android n'impriment pas les couleurs de
      fond (contrairement à Windows) : les en-têtes de tableau et le total
@@ -203,7 +203,7 @@ table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; fon
      colonne « Désignation » qui restait écrasée mot par mot, et ensuite un
      bas de page « Cachet et signature » qui débordait sur des pages quasi
      vides). Le mm correspond toujours à sa vraie taille physique. */
-  .doc{min-height:288mm; max-width:none; width:198mm; padding:5mm 8mm}
+  .doc{min-height:290mm; max-width:none; width:198mm; padding:5mm 8mm}
 }
 .doc{font-family:"Segoe UI", Arial, sans-serif; color:#111; font-size:12.5px; max-width:800px; margin:0 auto; padding:10px 0; display:flex; flex-direction:column; min-height:96vh}
 .doc-head{display:flex; justify-content:space-between; gap:20px; border-bottom:3px solid var(--teal); padding-bottom:14px}
@@ -225,12 +225,12 @@ table.doc-lines{width:100%; border-collapse:collapse; margin-top:6px; font-size:
 table.doc-lines th{background:var(--teal); color:#fff; padding:7px 9px; text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px}
 table.doc-lines td{padding:7px 9px; border-bottom:1px solid #DDE4E2; word-wrap:break-word; overflow-wrap:break-word}
 table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
-.doc-tot{margin-left:auto; width:300px; margin-top:12px; font-size:12.5px}
+.doc-tot{margin-left:auto; width:300px; margin-top:8px; font-size:12.5px}
 .doc-tot .row{display:flex; justify-content:space-between; padding:4px 8px}
 .doc-tot .row.grand{background:var(--teal); color:#fff; font-weight:800; border-radius:6px; padding:8px; font-size:14px; margin-top:4px}
-.doc-lettres{margin-top:14px; border:1px solid #CBD5D2; border-left:4px solid var(--saffron); border-radius:6px; padding:9px 13px; font-size:12px; font-style:italic}
+.doc-lettres{margin-top:10px; border:1px solid #CBD5D2; border-left:4px solid var(--saffron); border-radius:6px; padding:9px 13px; font-size:12px; font-style:italic}
 .doc-notes{margin-top:12px; font-size:11.5px; color:#333; white-space:pre-wrap}
-.doc-sign{display:flex; justify-content:space-between; margin-top:34px; font-size:12px}
+.doc-sign{display:flex; justify-content:space-between; margin-top:20px; font-size:12px}
 .doc-sign div{width:260px; text-align:center}
 .doc-sign .l{border-top:1px solid #999; margin-top:55px; padding-top:5px; color:#555}
 .doc-foot{margin-top:auto; border-top:2px solid var(--teal); padding-top:5px; text-align:center; font-size:10px; color:#444; line-height:1.5}
@@ -295,7 +295,7 @@ table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
 .page:last-child{page-break-after:auto; break-after:auto}
 .doc-title p.pagenum{font-size:10px; color:#777; margin-top:6px}
 @media print{
-  .page{min-height:288mm; padding:5mm 8mm}
+  .page{min-height:290mm; padding:5mm 8mm}
   table.doc-lines{page-break-inside:avoid}
 }
 </style>
