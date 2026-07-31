@@ -1663,6 +1663,33 @@ function piedPrint(){
   ].filter(Boolean).join(' — ');
   return `<div class="doc-foot">${mentions}${S.rib?'<br>RIB : '+esc(S.rib):''}</div>`;
 }
+/* Génère un vrai fichier PDF côté serveur (Chromium) au lieu d'ouvrir la
+   boîte de dialogue d'impression du téléphone : sur iOS/Android celle-ci
+   tamponne systématiquement l'URL et l'heure sur chaque page — un ajout du
+   système qu'aucun CSS ne peut supprimer. Un PDF téléchargé n'a pas ce
+   filigrane et s'imprime ensuite normalement depuis l'app Fichiers/l'appli
+   de lecture PDF du téléphone. En cas d'échec (service indisponible), on
+   retombe sur l'impression classique du navigateur. */
+async function telechargerPDF(nomFichier){
+  try{
+    const css = document.querySelector('style').innerHTML;
+    const html = $('#printArea').innerHTML;
+    const r = await fetch('/api/pdf', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({css, html, filename: nomFichier})
+    });
+    if(!r.ok) throw new Error('pdf');
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nomFichier;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+  }catch(e){
+    toast('PDF indisponible, impression classique utilisée');
+    window.print();
+  }
+}
 /* Estime le nombre de lignes qu'un texte occupera une fois retourné à la
    ligne dans une colonne d'environ charsParLigne caractères de large —
    utilisé pour qu'une désignation très longue (plusieurs dizaines de mots)
@@ -1800,7 +1827,7 @@ function imprimer(type, id){
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` +
     pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:28, capN:33, finCost:isBL?6:14}) + `</div>`;
-  window.print();
+  telechargerPDF(`${titre} ${d.numero}.pdf`);
 }
 function imprimerReleve(clientId){
   const cl = clientById(clientId); if(!cl) return;
@@ -1842,7 +1869,7 @@ function imprimerReleve(clientId){
       <th class="num" style="width:100px">Crédit</th><th class="num" style="width:110px">Solde</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
-  window.print();
+  telechargerPDF(`Releve ${cl.nom}.pdf`);
 }
 
 /* ---------- Paramètres ---------- */
@@ -2392,7 +2419,7 @@ function imprimerRecu(id){
     </div>
     ${piedPrint()}
   </div>`;
-  window.print();
+  telechargerPDF(`Recu ${r.recu}.pdf`);
 }
 
 /* ---------- Lettre de change (traite / LCN) ---------- */
@@ -2438,7 +2465,7 @@ function imprimerTraite(id){
     </div>
     ${piedPrint()}
   </div>`;
-  window.print();
+  telechargerPDF(`Lettre de change ${f?.numero||r.id}.pdf`);
 }
 
 /* ---------- Relevé fournisseur ---------- */
@@ -2477,7 +2504,7 @@ function imprimerReleveF(fournisseurId){
       <th class="num" style="width:100px">Payé</th><th class="num" style="width:110px">Solde dû</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
-  window.print();
+  telechargerPDF(`Releve ${fo.nom}.pdf`);
 }
 
 /* ---------- Lettres de relance graduées ---------- */
@@ -2533,7 +2560,7 @@ function imprimerRelance(clientId, niv){
     theadHtml:`<tr><th style="width:130px">Facture</th><th style="width:90px">Date</th><th style="width:90px">Échéance</th><th class="num" style="width:110px">Montant TTC</th><th class="num" style="width:100px">Reste dû</th><th class="num" style="width:80px">Retard</th></tr>`,
     rows, finHtml, cap1:22, capN:27, finCost:11
   }) + `</div>`;
-  window.print();
+  telechargerPDF(`${niv==='3'?'Mise en demeure':'Relance '+niv} ${cl.nom}.pdf`);
 }
 
 /* ---------- Inventaire physique ---------- */
@@ -2588,7 +2615,7 @@ function imprimerFeuilleComptage(dep){
       <th style="width:110px">Compté</th><th style="width:110px">Observations</th></tr>`,
     rows, finHtml, cap1:26, capN:29, finCost:5
   }) + `</div>`;
-  window.print();
+  telechargerPDF(`Feuille de comptage ${dp?.nom||''}.pdf`);
 }
 
 /* ---------- Sécurité (verrouillage) ---------- */
@@ -3056,7 +3083,7 @@ function imprimerBulletin(id){
     </div>
     ${piedPrint()}
   </div>`;
-  window.print();
+  telechargerPDF(`Bulletin ${e.nom} ${b.periode}.pdf`);
 }
 
 /* ---------- Démarrage ---------- */

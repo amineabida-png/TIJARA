@@ -3,6 +3,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 const { initDb, loadUsers, saveUsers, loadBusinessDataFor, saveBusinessDataFor, usersCount } = require('./db');
 
 const PORT = process.env.PORT || 3000;
@@ -113,6 +115,31 @@ function sendHTML(res, html) {
 function sendRedirect(res, location) {
   res.writeHead(302, { 'Location': location });
   res.end();
+}
+
+// Rend le HTML imprimable en PDF côté serveur (Chromium headless) au lieu de
+// passer par la boîte de dialogue d'impression du téléphone : sur iOS/Android
+// celle-ci tamponne systématiquement l'URL et l'heure sur chaque page, un
+// ajout du système qu'aucun CSS ne peut supprimer. Un vrai PDF généré ici
+// n'a pas ce filigrane, et rend l'imprimante identique quel que soit l'appareil.
+async function renderPdf(css, bodyHtml) {
+  const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>${css}</style></head>
+    <body><div id="printArea" style="display:block">${bodyHtml}</div></body></html>`;
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    await page.emulateMediaType('print');
+    return await page.pdf({ format: 'A4', printBackground: true });
+  } finally {
+    await browser.close();
+  }
 }
 
 // ── Init utilisateurs ─────────────────────────────────────────
@@ -454,6 +481,27 @@ const server = http.createServer(async (req, res) => {
   if (pathname.startsWith('/api/')) {
     const sessionUser = await getSessionUser(req);
     if (!sessionUser) return sendJSON(res, 401, { error: 'Non authentifié' });
+
+    // POST /api/pdf — génère un PDF côté serveur à partir du CSS + HTML de la
+    // zone imprimable envoyés par le client (voir renderPdf plus haut).
+    if (pathname === '/api/pdf' && req.method === 'POST') {
+      const body = await parseBody(req);
+      if (typeof body.css !== 'string' || typeof body.html !== 'string') {
+        return sendJSON(res, 400, { error: 'css et html (string) requis' });
+      }
+      try {
+        const pdf = await renderPdf(body.css, body.html);
+        res.writeHead(200, {
+          'Content-Type': 'application/pdf',
+          'Content-Length': pdf.length,
+          'Content-Disposition': `attachment; filename="${(body.filename || 'document.pdf').replace(/[^\w.\-]+/g, '_')}"`
+        });
+        return res.end(pdf);
+      } catch (e) {
+        console.error('Erreur génération PDF:', e);
+        return sendJSON(res, 500, { error: 'Échec de la génération du PDF' });
+      }
+    }
 
     // GET /api/data — récupérer les données métier synchronisées du compte connecté
     // (sauvegarde automatique / accès depuis n'importe quel appareil)
