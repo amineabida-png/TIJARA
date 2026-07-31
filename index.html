@@ -186,7 +186,7 @@ table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; fon
 /* ---------- Rendu des documents imprimables ---------- */
 #printArea{display:none}
 @media print{
-  @page{margin:4mm 6mm}
+  @page{size:A4; margin:4mm 6mm}
   body{background:#fff}
   /* Sans ça, iOS Safari et Chrome Android n'impriment pas les couleurs de
      fond (contrairement à Windows) : les en-têtes de tableau et le total
@@ -195,8 +195,13 @@ table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; fon
   .app, #toast, #syncIndic, .overlay{display:none !important}
   #printArea{display:block}
   /* Marge de sécurité indépendante du réglage "Marges" du navigateur : même sur
-     "Aucune"/"Minimale" (qui ignore @page), le contenu garde un espace au bord. */
-  .doc{min-height:calc(100vh - 3mm); max-width:none; padding:6mm 8mm}
+     "Aucune"/"Minimale" (qui ignore @page), le contenu garde un espace au bord.
+     Largeur posée en mm (unité physique, absolue) plutôt qu'en % : sur
+     iOS/Android, le rendu d'impression met en page selon la largeur d'écran
+     du téléphone et non celle du papier — un % de cette largeur-écran reste
+     minuscule (d'où la colonne « Désignation » écrasée mot par mot). Le mm
+     correspond toujours à sa vraie taille physique, quel que soit l'appareil. */
+  .doc{min-height:calc(100vh - 3mm); max-width:none; width:198mm; padding:6mm 8mm}
 }
 .doc{font-family:"Segoe UI", Arial, sans-serif; color:#111; font-size:12.5px; max-width:800px; margin:0 auto; padding:10px 0; display:flex; flex-direction:column; min-height:96vh}
 .doc-head{display:flex; justify-content:space-between; gap:20px; border-bottom:3px solid var(--teal); padding-bottom:14px}
@@ -1656,22 +1661,40 @@ function piedPrint(){
   ].filter(Boolean).join(' — ');
   return `<div class="doc-foot">${mentions}${S.rib?'<br>RIB : '+esc(S.rib):''}</div>`;
 }
+/* Estime le nombre de lignes qu'un texte occupera une fois retourné à la
+   ligne dans une colonne d'environ charsParLigne caractères de large —
+   utilisé pour qu'une désignation très longue (plusieurs dizaines de mots)
+   pèse plus dans la pagination qu'une désignation d'une seule ligne, au
+   lieu d'être comptée comme « 1 ligne » et de faire déborder la page. */
+function estimerLignesTexte(txt, charsParLigne){
+  const t = String(txt||'');
+  if(!t) return 1;
+  return t.split('\n').reduce((n,seg)=> n + Math.max(1, Math.ceil(seg.length / charsParLigne)), 0);
+}
 /* Pagination : découpe les lignes en pages A4, répète l'en-tête et le pied,
-   numérote « Page i / N », réserve la place des totaux/signature en dernière page. */
+   numérote « Page i / N », réserve la place des totaux/signature en dernière page.
+   Chaque ligne peut être une chaîne HTML (poids 1) ou {html, weight} pour les
+   désignations longues qui prennent plusieurs « unités-ligne ». */
 function pagesDoc(o){
   // Capacités réelles d'une page A4 en « unités-ligne » (~30 px chacune)
   const cap1 = Math.max(6, (o.cap1 ?? 22) - (o.avantCost ?? 0) + (o.metaHtml ? 0 : 3));
   const capN = o.capN ?? 27;
   const finCost = o.finHtml ? (o.finCost ?? 13) : 0;
-  const rows = o.rows || [];
+  const rows = (o.rows || []).map(r => typeof r === 'string' ? {html:r, weight:1} : r);
   const chunks = [];
   let i = 0;
   while(true){
     const cap = chunks.length===0 ? cap1 : capN;
-    const restants = rows.length - i;
+    const poidsRestant = rows.slice(i).reduce((s,r)=>s+r.weight, 0);
     // Tout ce qui reste + le bloc totaux/signature tient sur cette page → on termine ici
-    if(restants + finCost <= cap){ chunks.push(rows.slice(i)); break; }
-    chunks.push(rows.slice(i, i+cap)); i += cap;
+    if(poidsRestant + finCost <= cap){ chunks.push(rows.slice(i)); break; }
+    // Remplit cette page jusqu'à la capacité ; une ligne à elle seule plus
+    // grande que la capacité part quand même seule sur sa propre page plutôt
+    // que d'être coupée au milieu avec la suivante.
+    let poids = 0, j = i;
+    while(j < rows.length && (poids===0 || poids + rows[j].weight <= cap)){ poids += rows[j].weight; j++; }
+    if(j===i) j = i+1;
+    chunks.push(rows.slice(i, j)); i = j;
     // Toutes les lignes sont placées mais le bloc final ne tenait pas → page finale dédiée
     if(i >= rows.length){ chunks.push([]); break; }
   }
@@ -1684,7 +1707,7 @@ function pagesDoc(o){
     </div>
     ${idx===0 && o.metaHtml ? `<div class="doc-meta">${o.metaHtml}</div>` : ''}
     ${idx===0 && o.avantHtml ? o.avantHtml : ''}
-    ${ch.length ? `<table class="doc-lines">${colgroupFromThead(o.theadHtml)}<thead>${o.theadHtml||''}</thead><tbody>${ch.join('')}</tbody></table>` : ''}
+    ${ch.length ? `<table class="doc-lines">${colgroupFromThead(o.theadHtml)}<thead>${o.theadHtml||''}</thead><tbody>${ch.map(r=>r.html).join('')}</tbody></table>` : ''}
     ${idx===N-1 ? (o.finHtml||'') : ''}
     ${piedPrint()}
   </div>`).join('');
@@ -1710,15 +1733,18 @@ function imprimer(type, id){
     const brut = (Number(l.qte)||0)*(Number(l.pu)||0);
     const net = r2(brut - brut*(Number(l.remise)||0)/100);
     const p = produitById(l.produitId);
-    return `<tr>
+    const desTxt = (p?.ref? p.ref+' — ':'') + l.designation;
+    const html = `<tr>
       <td>${i2+1}</td>
-      <td>${esc((p?.ref? p.ref+' — ':'') + l.designation)}</td>
+      <td>${esc(desTxt)}</td>
       <td class="num">${fmt(l.qte)}${p?.unite? ' '+esc(p.unite):''}</td>
       ${isBL?'':`<td class="num">${fmt(l.pu)}</td>
       <td class="num">${l.remise?fmt(l.remise)+' %':'—'}</td>
       <td class="num">${l.tva} %</td>
       <td class="num">${fmt(net)}</td>`}
-    </tr>`;});
+    </tr>`;
+    return {html, weight: estimerLignesTexte(desTxt, isBL?52:38)};
+  });
   const theadHtml = `<tr><th style="width:30px">#</th><th>Désignation</th><th class="num" style="width:90px">Quantité</th>
     ${isBL?'':`<th class="num" style="width:90px">PU HT</th><th class="num" style="width:70px">Remise</th>
     <th class="num" style="width:60px">TVA</th><th class="num" style="width:100px">Total HT</th>`}</tr>`;
