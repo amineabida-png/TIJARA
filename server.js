@@ -3,8 +3,6 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
 const { initDb, loadUsers, saveUsers, loadBusinessDataFor, saveBusinessDataFor, usersCount } = require('./db');
 
 const PORT = process.env.PORT || 3000;
@@ -122,7 +120,22 @@ function sendRedirect(res, location) {
 // celle-ci tamponne systématiquement l'URL et l'heure sur chaque page, un
 // ajout du système qu'aucun CSS ne peut supprimer. Un vrai PDF généré ici
 // n'a pas ce filigrane, et rend l'imprimante identique quel que soit l'appareil.
+// puppeteer-core est publié en ESM pur — require() le fait planter au
+// démarrage du serveur (ERR_REQUIRE_ESM). import() dynamique fonctionne
+// depuis du CommonJS ; on le fait une seule fois et on garde le résultat.
+let _pdfDeps = null;
+async function loadPdfDeps() {
+  if (!_pdfDeps) {
+    const [{ default: puppeteer }, { default: chromium }] = await Promise.all([
+      import('puppeteer-core'),
+      import('@sparticuz/chromium')
+    ]);
+    _pdfDeps = { puppeteer, chromium };
+  }
+  return _pdfDeps;
+}
 async function renderPdf(css, bodyHtml) {
+  const { puppeteer, chromium } = await loadPdfDeps();
   const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
     <style>${css}</style></head>
     <body><div id="printArea" style="display:block">${bodyHtml}</div></body></html>`;
