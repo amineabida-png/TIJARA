@@ -1745,7 +1745,13 @@ function imprimer(type, id){
       <td class="num">${l.tva} %</td>
       <td class="num">${fmt(net)}</td>`}
     </tr>`;
-    return {html, weight: estimerLignesTexte(desTxt, isBL?52:38)};
+    // Le padding de la cellule (~14px) n'est payé qu'une fois par ligne du
+    // tableau, pas une fois par ligne de texte enroulée : la 1ère ligne
+    // « coûte » l'unité pleine (padding + texte), chaque ligne en plus ne
+    // coûte que sa hauteur de texte, environ une demi-unité.
+    const lignes = estimerLignesTexte(desTxt, isBL?52:38);
+    const weight = lignes<=1 ? 1 : Math.ceil(1 + (lignes-1)/2);
+    return {html, weight};
   });
   const theadHtml = `<tr><th style="width:30px">#</th><th>Désignation</th><th class="num" style="width:90px">Quantité</th>
     ${isBL?'':`<th class="num" style="width:90px">PU HT</th><th class="num" style="width:70px">Remise</th>
@@ -1793,7 +1799,7 @@ function imprimer(type, id){
       <div><b>${signDroite}</b><div class="l">&nbsp;</div></div>
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` +
-    pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:22, capN:27, finCost:isBL?6:14}) + `</div>`;
+    pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:28, capN:33, finCost:isBL?6:14}) + `</div>`;
   window.print();
 }
 function imprimerReleve(clientId){
