@@ -1596,6 +1596,18 @@ function exportJournal(kind){
 }
 
 /* ---------- Impression (documents + relevé) ---------- */
+/* Safari/iOS applique de façon peu fiable les largeurs posées sur les <th>
+   d'un tableau en table-layout:fixed (la colonne « Désignation » se
+   retrouve tantôt écrasée, tantôt normale selon la page) — un <colgroup>
+   explicite est la seule méthode que WebKit respecte systématiquement. */
+function colgroupFromThead(theadHtml){
+  const ths = (theadHtml||'').match(/<th\b[^>]*>/g) || [];
+  const cols = ths.map(th => {
+    const m = th.match(/width:\s*([\d.]+(?:px|%))/);
+    return m ? `<col style="width:${m[1]}">` : '<col>';
+  });
+  return `<colgroup>${cols.join('')}</colgroup>`;
+}
 function docStyleAttr(){
   const st = DB.societe.docStyle || {};
   return `style="--teal:${esc(st.couleur||'#0C4A46')}; --saffron:${esc(st.accent||'#D9922E')}; font-family:'${esc(st.police||'Segoe UI')}', Arial, sans-serif"`;
@@ -1652,7 +1664,7 @@ function pagesDoc(o){
     </div>
     ${idx===0 && o.metaHtml ? `<div class="doc-meta">${o.metaHtml}</div>` : ''}
     ${idx===0 && o.avantHtml ? o.avantHtml : ''}
-    ${ch.length ? `<table class="doc-lines"><thead>${o.theadHtml||''}</thead><tbody>${ch.join('')}</tbody></table>` : ''}
+    ${ch.length ? `<table class="doc-lines">${colgroupFromThead(o.theadHtml)}<thead>${o.theadHtml||''}</thead><tbody>${ch.join('')}</tbody></table>` : ''}
     ${idx===N-1 ? (o.finHtml||'') : ''}
     ${piedPrint()}
   </div>`).join('');
@@ -2969,6 +2981,7 @@ function imprimerBulletin(id){
       </div>
     </div>
     <table class="doc-lines">
+      <colgroup><col><col style="width:90px"><col style="width:70px"><col style="width:95px"><col style="width:95px"></colgroup>
       <thead><tr><th>Rubrique</th><th class="num" style="width:90px">Base</th><th class="num" style="width:70px">Taux</th>
         <th class="num" style="width:95px">Gains</th><th class="num" style="width:95px">Retenues</th></tr></thead>
       <tbody>${rows}
