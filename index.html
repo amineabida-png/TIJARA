@@ -196,12 +196,14 @@ table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; fon
   #printArea{display:block}
   /* Marge de sécurité indépendante du réglage "Marges" du navigateur : même sur
      "Aucune"/"Minimale" (qui ignore @page), le contenu garde un espace au bord.
-     Largeur posée en mm (unité physique, absolue) plutôt qu'en % : sur
-     iOS/Android, le rendu d'impression met en page selon la largeur d'écran
-     du téléphone et non celle du papier — un % de cette largeur-écran reste
-     minuscule (d'où la colonne « Désignation » écrasée mot par mot). Le mm
-     correspond toujours à sa vraie taille physique, quel que soit l'appareil. */
-  .doc{min-height:calc(100vh - 3mm); max-width:none; width:198mm; padding:6mm 8mm}
+     Largeur ET hauteur posées en mm (unité physique, absolue) plutôt qu'en %
+     ou en vh : sur iOS/Android, le rendu d'impression se base sur les
+     dimensions de l'écran du téléphone et non sur celles du papier — un vh
+     de cet écran ne correspond pas à la hauteur d'une page A4 (d'où la
+     colonne « Désignation » qui restait écrasée mot par mot, et ensuite un
+     bas de page « Cachet et signature » qui débordait sur des pages quasi
+     vides). Le mm correspond toujours à sa vraie taille physique. */
+  .doc{min-height:286mm; max-width:none; width:198mm; padding:6mm 8mm}
 }
 .doc{font-family:"Segoe UI", Arial, sans-serif; color:#111; font-size:12.5px; max-width:800px; margin:0 auto; padding:10px 0; display:flex; flex-direction:column; min-height:96vh}
 .doc-head{display:flex; justify-content:space-between; gap:20px; border-bottom:3px solid var(--teal); padding-bottom:14px}
@@ -293,7 +295,7 @@ table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
 .page:last-child{page-break-after:auto; break-after:auto}
 .doc-title p.pagenum{font-size:10px; color:#777; margin-top:6px}
 @media print{
-  .page{min-height:calc(100vh - 3mm); padding:6mm 8mm}
+  .page{min-height:286mm; padding:6mm 8mm}
   table.doc-lines{page-break-inside:avoid}
 }
 </style>
