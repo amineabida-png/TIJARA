@@ -1690,6 +1690,20 @@ async function telechargerPDF(nomFichier){
     window.print();
   }
 }
+/* Propose les deux modes de sortie une fois le document prêt dans #printArea :
+   PDF direct (généré côté serveur, identique sur tous les appareils, sans
+   filigrane) ou impression classique via la boîte de dialogue du navigateur
+   (utile pour une imprimante déjà configurée/réseau, ou un pilote « pro »
+   avec des réglages spécifiques que le PDF ne couvre pas). */
+function proposerSortie(nomFichier){
+  openModal('Impression', `
+    <p class="text-muted" style="margin-bottom:14px">« ${esc(nomFichier)} »</p>
+    <div style="display:flex; flex-direction:column; gap:10px">
+      <button class="btn btn-primary" onclick="closeModal(); telechargerPDF('${esc(nomFichier)}')">📄 Télécharger en PDF</button>
+      <button class="btn btn-accent" onclick="closeModal(); window.print()">🖨 Impression professionnelle (imprimante)</button>
+    </div>
+  `);
+}
 /* Estime le nombre de lignes qu'un texte occupera une fois retourné à la
    ligne dans une colonne d'environ charsParLigne caractères de large —
    utilisé pour qu'une désignation très longue (plusieurs dizaines de mots)
@@ -1827,7 +1841,7 @@ function imprimer(type, id){
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` +
     pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:28, capN:33, finCost:isBL?6:14}) + `</div>`;
-  telechargerPDF(`${titre} ${d.numero}.pdf`);
+  proposerSortie(`${titre} ${d.numero}.pdf`);
 }
 function imprimerReleve(clientId){
   const cl = clientById(clientId); if(!cl) return;
@@ -1869,7 +1883,7 @@ function imprimerReleve(clientId){
       <th class="num" style="width:100px">Crédit</th><th class="num" style="width:110px">Solde</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
-  telechargerPDF(`Releve ${cl.nom}.pdf`);
+  proposerSortie(`Releve ${cl.nom}.pdf`);
 }
 
 /* ---------- Paramètres ---------- */
@@ -2419,7 +2433,7 @@ function imprimerRecu(id){
     </div>
     ${piedPrint()}
   </div>`;
-  telechargerPDF(`Recu ${r.recu}.pdf`);
+  proposerSortie(`Recu ${r.recu}.pdf`);
 }
 
 /* ---------- Lettre de change (traite / LCN) ---------- */
@@ -2465,7 +2479,7 @@ function imprimerTraite(id){
     </div>
     ${piedPrint()}
   </div>`;
-  telechargerPDF(`Lettre de change ${f?.numero||r.id}.pdf`);
+  proposerSortie(`Lettre de change ${f?.numero||r.id}.pdf`);
 }
 
 /* ---------- Relevé fournisseur ---------- */
@@ -2504,7 +2518,7 @@ function imprimerReleveF(fournisseurId){
       <th class="num" style="width:100px">Payé</th><th class="num" style="width:110px">Solde dû</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
-  telechargerPDF(`Releve ${fo.nom}.pdf`);
+  proposerSortie(`Releve ${fo.nom}.pdf`);
 }
 
 /* ---------- Lettres de relance graduées ---------- */
@@ -2560,7 +2574,7 @@ function imprimerRelance(clientId, niv){
     theadHtml:`<tr><th style="width:130px">Facture</th><th style="width:90px">Date</th><th style="width:90px">Échéance</th><th class="num" style="width:110px">Montant TTC</th><th class="num" style="width:100px">Reste dû</th><th class="num" style="width:80px">Retard</th></tr>`,
     rows, finHtml, cap1:22, capN:27, finCost:11
   }) + `</div>`;
-  telechargerPDF(`${niv==='3'?'Mise en demeure':'Relance '+niv} ${cl.nom}.pdf`);
+  proposerSortie(`${niv==='3'?'Mise en demeure':'Relance '+niv} ${cl.nom}.pdf`);
 }
 
 /* ---------- Inventaire physique ---------- */
@@ -2615,7 +2629,7 @@ function imprimerFeuilleComptage(dep){
       <th style="width:110px">Compté</th><th style="width:110px">Observations</th></tr>`,
     rows, finHtml, cap1:26, capN:29, finCost:5
   }) + `</div>`;
-  telechargerPDF(`Feuille de comptage ${dp?.nom||''}.pdf`);
+  proposerSortie(`Feuille de comptage ${dp?.nom||''}.pdf`);
 }
 
 /* ---------- Sécurité (verrouillage) ---------- */
@@ -3083,7 +3097,7 @@ function imprimerBulletin(id){
     </div>
     ${piedPrint()}
   </div>`;
-  telechargerPDF(`Bulletin ${e.nom} ${b.periode}.pdf`);
+  proposerSortie(`Bulletin ${e.nom} ${b.periode}.pdf`);
 }
 
 /* ---------- Démarrage ---------- */
