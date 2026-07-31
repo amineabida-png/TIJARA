@@ -188,6 +188,10 @@ table.lines td.ln-total{text-align:right; font-variant-numeric:tabular-nums; fon
 @media print{
   @page{margin:4mm 6mm}
   body{background:#fff}
+  /* Sans ça, iOS Safari et Chrome Android n'impriment pas les couleurs de
+     fond (contrairement à Windows) : les en-têtes de tableau et le total
+     passent en texte blanc sur fond blanc, donc invisibles. */
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important}
   .app, #toast, #syncIndic, .overlay{display:none !important}
   #printArea{display:block}
   /* Marge de sécurité indépendante du réglage "Marges" du navigateur : même sur
