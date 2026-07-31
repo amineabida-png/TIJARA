@@ -361,6 +361,26 @@ table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
    Ventes · Achats · Stock multi-dépôts · Trésorerie · Rapports
    ===================================================== */
 
+/* ---------- Impression mobile : bug de viewport iOS/Android ---------- */
+/* Sur iPhone/Android, window.print() met en page le document imprimé en
+   utilisant la largeur de l'écran du téléphone (via <meta viewport
+   width=device-width>) au lieu de la largeur réelle de la page A4. Résultat :
+   les colonnes fixes (Qté, PU, TVA…) occupent presque toute cette largeur
+   minuscule et écrasent la colonne « Désignation » à quelques pixels — le
+   texte revient à la ligne mot par mot et le document déborde sur plusieurs
+   pages, alors que Windows met déjà en page à la largeur réelle du papier.
+   On élargit temporairement le viewport le temps de l'impression pour que
+   la mise en page se calcule sur une largeur proche de celle du papier. */
+(function(){
+  const vp = document.querySelector('meta[name="viewport"]');
+  if (!vp) return;
+  const original = vp.getAttribute('content');
+  const widen = () => vp.setAttribute('content', 'width=1024');
+  const restore = () => vp.setAttribute('content', original);
+  window.addEventListener('beforeprint', widen);
+  window.addEventListener('afterprint', restore);
+})();
+
 /* ---------- Utilitaires ---------- */
 const $ = s => document.querySelector(s);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
