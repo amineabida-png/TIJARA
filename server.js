@@ -120,30 +120,24 @@ function sendRedirect(res, location) {
 // celle-ci tamponne systématiquement l'URL et l'heure sur chaque page, un
 // ajout du système qu'aucun CSS ne peut supprimer. Un vrai PDF généré ici
 // n'a pas ce filigrane, et rend l'imprimante identique quel que soit l'appareil.
-// puppeteer-core est publié en ESM pur — require() le fait planter au
-// démarrage du serveur (ERR_REQUIRE_ESM). import() dynamique fonctionne
-// depuis du CommonJS ; on le fait une seule fois et on garde le résultat.
-let _pdfDeps = null;
-async function loadPdfDeps() {
-  if (!_pdfDeps) {
-    const [{ default: puppeteer }, { default: chromium }] = await Promise.all([
-      import('puppeteer-core'),
-      import('@sparticuz/chromium')
-    ]);
-    _pdfDeps = { puppeteer, chromium };
-  }
-  return _pdfDeps;
+// puppeteer est publié en ESM pur — require() le fait planter au démarrage
+// du serveur (ERR_REQUIRE_ESM). import() dynamique fonctionne depuis du
+// CommonJS ; on le fait une seule fois et on garde le résultat. On utilise le
+// paquet complet (Chromium bundlé, téléchargé pour l'environnement de build
+// réel) plutôt que puppeteer-core + un binaire "serverless" générique, ce
+// dernier échouant au lancement (code 127) dans le conteneur Railway.
+let _puppeteer = null;
+async function loadPuppeteer() {
+  if (!_puppeteer) _puppeteer = (await import('puppeteer')).default;
+  return _puppeteer;
 }
 async function renderPdf(css, bodyHtml) {
-  const { puppeteer, chromium } = await loadPdfDeps();
+  const puppeteer = await loadPuppeteer();
   const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
     <style>${css}</style></head>
     <body><div id="printArea" style="display:block">${bodyHtml}</div></body></html>`;
   const browser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(),
-    headless: chromium.headless
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   try {
     const page = await browser.newPage();
