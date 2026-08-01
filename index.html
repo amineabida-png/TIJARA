@@ -1704,16 +1704,19 @@ function qrFacture(d, c, titre){
    filigrane et s'imprime ensuite normalement depuis l'app Fichiers/l'appli
    de lecture PDF du téléphone. En cas d'échec (service indisponible), on
    retombe sur l'impression classique du navigateur. */
+async function genererPDFBlob(nomFichier){
+  const css = document.querySelector('style').innerHTML;
+  const html = $('#printArea').innerHTML;
+  const r = await fetch('/api/pdf', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({css, html, filename: nomFichier})
+  });
+  if(!r.ok) throw new Error('pdf');
+  return r.blob();
+}
 async function telechargerPDF(nomFichier){
   try{
-    const css = document.querySelector('style').innerHTML;
-    const html = $('#printArea').innerHTML;
-    const r = await fetch('/api/pdf', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({css, html, filename: nomFichier})
-    });
-    if(!r.ok) throw new Error('pdf');
-    const blob = await r.blob();
+    const blob = await genererPDFBlob(nomFichier);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = nomFichier;
@@ -1724,17 +1727,52 @@ async function telechargerPDF(nomFichier){
     window.print();
   }
 }
-/* Propose les deux modes de sortie une fois le document prêt dans #printArea :
+/* Numéro de téléphone → format wa.me (indicatif pays, chiffres seuls). Les
+   numéros marocains saisis en local (0X XX XX XX XX) sont convertis en
+   +212X XX XX XX XX ; un numéro déjà international (+33…, +212…) est repris
+   tel quel. */
+function telWhatsApp(tel){
+  let t = String(tel||'').replace(/[^\d+]/g,'');
+  if(t.startsWith('+')) t = t.slice(1);
+  else if(t.startsWith('0')) t = '212'+t.slice(1);
+  return t;
+}
+/* Partage le document (PDF) via le partage natif du téléphone (WhatsApp,
+   Mail, Messages…) quand disponible — l'utilisateur choisit l'app dans la
+   feuille de partage du système. Sur desktop, où le partage natif de
+   fichiers n'existe pas, on télécharge le PDF et on ouvre WhatsApp Web avec
+   un message pré-rempli ; il ne reste qu'à joindre le fichier déjà présent
+   dans les téléchargements. */
+async function partagerDocument(nomFichier, telClient, texte){
+  let blob;
+  try{ blob = await genererPDFBlob(nomFichier); }
+  catch(e){ return toast('PDF indisponible pour le partage', true); }
+  const msg = texte || `Bonjour, veuillez trouver ci-joint : ${nomFichier}`;
+  const file = new File([blob], nomFichier, {type:'application/pdf'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:nomFichier, text:msg}); return; }
+    catch(e){ if(e.name==='AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nomFichier;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  const tel = telWhatsApp(telClient);
+  window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+  toast('PDF téléchargé — joignez-le dans la conversation WhatsApp qui vient de s’ouvrir');
+}
+/* Propose les modes de sortie une fois le document prêt dans #printArea :
    PDF direct (généré côté serveur, identique sur tous les appareils, sans
-   filigrane) ou impression classique via la boîte de dialogue du navigateur
+   filigrane), impression classique via la boîte de dialogue du navigateur
    (utile pour une imprimante déjà configurée/réseau, ou un pilote « pro »
-   avec des réglages spécifiques que le PDF ne couvre pas). */
-function proposerSortie(nomFichier){
+   avec des réglages spécifiques que le PDF ne couvre pas), ou partage
+   direct (WhatsApp/Email/…) quand un destinataire est fourni. */
+function proposerSortie(nomFichier, telClient, texte){
   openModal('Impression', `
     <p class="text-muted" style="margin-bottom:14px">« ${esc(nomFichier)} »</p>
     <div style="display:flex; flex-direction:column; gap:10px">
       <button class="btn btn-primary" onclick="closeModal(); telechargerPDF('${esc(nomFichier)}')">📄 Télécharger en PDF</button>
       <button class="btn btn-accent" onclick="closeModal(); window.print()">🖨 Impression professionnelle (imprimante)</button>
+      <button class="btn" onclick="closeModal(); partagerDocument('${esc(nomFichier)}', ${JSON.stringify(telClient||'')}, ${JSON.stringify(texte||'')})">📤 Partager (WhatsApp, Email…)</button>
     </div>
   `);
 }
@@ -1876,7 +1914,7 @@ function imprimer(type, id){
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` +
     pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:28, capN:33, finCost:isBL?6:14,
       qrText: (type==='factures'||type==='avoirs') ? qrFacture(d, c, titre) : null}) + `</div>`;
-  proposerSortie(`${titre} ${d.numero}.pdf`);
+  proposerSortie(`${titre} ${d.numero}.pdf`, cl.tel, `Bonjour, veuillez trouver ci-joint votre ${titre.toLowerCase()} n° ${d.numero}.`);
 }
 function imprimerReleve(clientId){
   const cl = clientById(clientId); if(!cl) return;
@@ -1918,7 +1956,7 @@ function imprimerReleve(clientId){
       <th class="num" style="width:100px">Crédit</th><th class="num" style="width:110px">Solde</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
-  proposerSortie(`Releve ${cl.nom}.pdf`);
+  proposerSortie(`Releve ${cl.nom}.pdf`, cl.tel, `Bonjour, veuillez trouver ci-joint votre relevé de compte.`);
 }
 
 /* ---------- Paramètres ---------- */
@@ -2468,7 +2506,7 @@ function imprimerRecu(id){
     </div>
     ${piedPrint()}
   </div>`;
-  proposerSortie(`Recu ${r.recu}.pdf`);
+  proposerSortie(`Recu ${r.recu}.pdf`, cl.tel, `Bonjour, veuillez trouver ci-joint votre reçu de paiement n° ${r.recu}.`);
 }
 
 /* ---------- Lettre de change (traite / LCN) ---------- */
@@ -2514,7 +2552,7 @@ function imprimerTraite(id){
     </div>
     ${piedPrint()}
   </div>`;
-  proposerSortie(`Lettre de change ${f?.numero||r.id}.pdf`);
+  proposerSortie(`Lettre de change ${f?.numero||r.id}.pdf`, cl.tel, `Bonjour, veuillez trouver ci-joint la lettre de change relative à la facture ${f?.numero||''}.`);
 }
 
 /* ---------- Relevé fournisseur ---------- */
@@ -2553,7 +2591,7 @@ function imprimerReleveF(fournisseurId){
       <th class="num" style="width:100px">Payé</th><th class="num" style="width:110px">Solde dû</th></tr>`,
     rows, finHtml, cap1:22, capN:28, finCost:8
   }) + `</div>`;
-  proposerSortie(`Releve ${fo.nom}.pdf`);
+  proposerSortie(`Releve ${fo.nom}.pdf`, fo.tel, `Bonjour, veuillez trouver ci-joint le relevé de compte.`);
 }
 
 /* ---------- Lettres de relance graduées ---------- */
@@ -2609,7 +2647,9 @@ function imprimerRelance(clientId, niv){
     theadHtml:`<tr><th style="width:130px">Facture</th><th style="width:90px">Date</th><th style="width:90px">Échéance</th><th class="num" style="width:110px">Montant TTC</th><th class="num" style="width:100px">Reste dû</th><th class="num" style="width:80px">Retard</th></tr>`,
     rows, finHtml, cap1:22, capN:27, finCost:11
   }) + `</div>`;
-  proposerSortie(`${niv==='3'?'Mise en demeure':'Relance '+niv} ${cl.nom}.pdf`);
+  proposerSortie(`${niv==='3'?'Mise en demeure':'Relance '+niv} ${cl.nom}.pdf`, cl.tel,
+    niv==='3' ? `Mise en demeure : merci de régulariser sans délai le montant dû de ${fmt(total)} DH (voir document ci-joint).`
+              : `Bonjour, un rappel concernant des factures en attente de règlement pour un montant total de ${fmt(total)} DH — détail en pièce jointe.`);
 }
 
 /* ---------- Inventaire physique ---------- */
