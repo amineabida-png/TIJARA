@@ -1655,13 +1655,35 @@ function cachetImgHtml(){
   if(!c) return '';
   return `<img src="${c}" alt="" style="display:block; max-height:98px; max-width:240px; margin:4px auto 0; position:relative">`;
 }
-function piedPrint(){
+/* qrText, si fourni (factures/avoirs), affiche un QR code à côté des mentions
+   légales : ICE émetteur, n°, date, montants — les mêmes informations déjà
+   imprimées en clair, pour vérification rapide. Prépare le terrain pour la
+   facturation électronique DGI (dont les spécifications techniques de
+   télétransmission ne sont pas encore publiées) sans rien prétendre de plus
+   que ce que ce simple QR de vérification permet aujourd'hui. */
+function piedPrint(qrText){
   const S = DB.societe;
   const mentions = [
     S.ice ? 'ICE : '+S.ice : '', S.idf ? 'IF : '+S.idf : '', S.rc ? 'RC : '+S.rc+(S.ville?' ('+S.ville+')':'') : '',
     S.patente ? 'Patente : '+S.patente : '', S.cnss ? 'CNSS : '+S.cnss : '', S.capital ? 'Capital : '+S.capital+' DH' : ''
   ].filter(Boolean).join(' — ');
-  return `<div class="doc-foot">${mentions}${S.rib?'<br>RIB : '+esc(S.rib):''}</div>`;
+  const texte = `${mentions}${S.rib?'<br>RIB : '+esc(S.rib):''}`;
+  if(!qrText) return `<div class="doc-foot">${texte}</div>`;
+  const qrUrl = `${location.origin}/qrcode?data=${encodeURIComponent(qrText)}`;
+  return `<div class="doc-foot" style="display:flex; align-items:center; gap:10px; text-align:left">
+    <img src="${qrUrl}" alt="QR" style="width:46px; height:46px; flex-shrink:0">
+    <span>${texte}</span>
+  </div>`;
+}
+/* Texte encodé dans le QR des factures/avoirs : mentions de vérification
+   rapide, format lisible (aucune spécification officielle DGI publiée à ce
+   jour pour un format binaire normalisé — voir commentaire sur piedPrint). */
+function qrFacture(d, c, titre){
+  const S = DB.societe;
+  return [
+    titre+' '+d.numero, S.nom, S.ice?'ICE:'+S.ice:'', 'Date:'+dfr(d.date),
+    'TTC:'+fmt(c.ttc)+' MAD', 'TVA:'+fmt(c.tva)+' MAD'
+  ].filter(Boolean).join('\n');
 }
 /* Génère un vrai fichier PDF côté serveur (Chromium) au lieu d'ouvrir la
    boîte de dialogue d'impression du téléphone : sur iOS/Android celle-ci
@@ -1752,7 +1774,7 @@ function pagesDoc(o){
     ${idx===0 && o.avantHtml ? o.avantHtml : ''}
     ${ch.length ? `<table class="doc-lines">${colgroupFromThead(o.theadHtml)}<thead>${o.theadHtml||''}</thead><tbody>${ch.map(r=>r.html).join('')}</tbody></table>` : ''}
     ${idx===N-1 ? (o.finHtml||'') : ''}
-    ${piedPrint()}
+    ${piedPrint(o.qrText)}
   </div>`).join('');
 }
 function imprimer(type, id){
@@ -1840,7 +1862,8 @@ function imprimer(type, id){
       <div><b>${signDroite}</b><div class="l">&nbsp;</div></div>
     </div>`;
   $('#printArea').innerHTML = `<div class="doc paged" ${docStyleAttr()}>` +
-    pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:28, capN:33, finCost:isBL?6:14}) + `</div>`;
+    pagesDoc({titre, sousTitre, metaHtml, theadHtml, rows, finHtml, cap1:28, capN:33, finCost:isBL?6:14,
+      qrText: (type==='factures'||type==='avoirs') ? qrFacture(d, c, titre) : null}) + `</div>`;
   proposerSortie(`${titre} ${d.numero}.pdf`);
 }
 function imprimerReleve(clientId){

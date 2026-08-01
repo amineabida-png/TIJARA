@@ -3,6 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const QRCode = require('qrcode');
 const { initDb, loadUsers, saveUsers, loadBusinessDataFor, saveBusinessDataFor, usersCount } = require('./db');
 
 const PORT = process.env.PORT || 3000;
@@ -591,6 +592,25 @@ const server = http.createServer(async (req, res) => {
     }
 
     return sendJSON(res, 404, { error: 'Route non trouvée' });
+  }
+
+  // GET /qrcode?data=... — QR code d'un document imprimé (mentions ICE/n°/
+  // date/montants). Hors du préfixe /api/ et sans authentification car cette
+  // image est chargée par une balise <img> à l'impression classique du
+  // navigateur ET par Chromium côté serveur lors de la génération PDF — ni
+  // l'un ni l'autre ne peut transmettre le cookie de session. Le contenu
+  // encodé n'est pas sensible : ce sont les mêmes mentions déjà imprimées
+  // en clair sur le document.
+  if (pathname === '/qrcode' && req.method === 'GET') {
+    const data = (url.searchParams.get('data') || '').slice(0, 300);
+    if (!data) { res.writeHead(400); return res.end(); }
+    try {
+      const png = await QRCode.toBuffer(data, { errorCorrectionLevel: 'M', margin: 1, width: 160 });
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400', 'Content-Length': png.length });
+      return res.end(png);
+    } catch (e) {
+      res.writeHead(500); return res.end();
+    }
   }
 
   // ── Auth Routes ────────────────────────────────────────────
