@@ -1020,6 +1020,8 @@ function editDoc(type, id){
   const d = id ? DB[type].find(x=>x.id===id) : null;
   if(type==='bc' && d && (d.statut||'en cours')==='reçue')
     return toast('Cette commande a déjà été réceptionnée (stock mis à jour) : elle n\u2019est plus modifiable.', true);
+  if((type==='factures' || type==='avoirs') && d)
+    return toast('Une facture émise est légalement figée (art. 145 du CGI — numérotation séquentielle sans interruption). Pour corriger, émettez un avoir.', true);
   editType = type;
   const L = DOCLBL[type];
   editLignes = d ? JSON.parse(JSON.stringify(d.lignes)) : [{produitId:'', designation:'', qte:1, pu:0, remise:0, tva:DB.societe.tvaDefaut ?? 20}];
@@ -1165,10 +1167,8 @@ function saveDoc(type, id){
   saveDB(); closeModal(); render(); toast('Document enregistré ✓');
 }
 function delDoc(type, id){
-  if(type==='factures'){
-    if(DB.reglements.some(r=>r.factureId===id)) return toast('Supprimez d\u2019abord les règlements liés à cette facture.', true);
-    if(DB.avoirs.some(a=>a.origineId===id)) return toast('Un avoir est lié à cette facture : supprimez-le d\u2019abord.', true);
-  }
+  if(type==='factures' || type==='avoirs')
+    return toast('Une facture émise ne peut pas être supprimée (art. 145 du CGI — numérotation séquentielle sans interruption). Pour l\u2019annuler, émettez un avoir.', true);
   if(type==='fachats' && DB.reglementsF.some(r=>r.factureId===id))
     return toast('Supprimez d\u2019abord les paiements liés à cette facture d\u2019achat.', true);
   const d = DB[type].find(x=>x.id===id);
@@ -1176,8 +1176,7 @@ function delDoc(type, id){
     ? 'Cette commande a été réceptionnée : les quantités seront retirées du stock. Supprimer ?'
     : 'Supprimer ce document définitivement ?';
   if(!confirm(supp)) return;
-  if(type==='factures') appliquerStock(d.lignes, +1, d.depotId);
-  if((type==='avoirs' && !d.sansStock) || type==='retours') appliquerStock(d.lignes, -1, d.depotId);
+  if(type==='retours') appliquerStock(d.lignes, -1, d.depotId);
   if(type==='retoursF') appliquerStock(d.lignes, +1, d.depotId);
   if(type==='bc' && (d.statut||'en cours')==='reçue') appliquerStock(d.lignes, -1, d.depotId);
   DB[type] = DB[type].filter(x=>x.id!==id);
