@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tijara — Gestion Commerciale Maroc</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0C4A46">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tijara">
 <style>
 :root{
   --ink:#16211F; --muted:#5C6B67; --bg:#F2F4F3; --panel:#FFFFFF; --line:#DFE6E3;
@@ -387,6 +393,12 @@ table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
   window.addEventListener('beforeprint', widen);
   window.addEventListener('afterprint', restore);
 })();
+
+/* Service worker minimal, juste pour l'installabilité (icône sur l'écran
+   d'accueil) — ne met rien en cache, voir sw.js. */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
 
 /* ---------- Utilitaires ---------- */
 const $ = s => document.querySelector(s);
