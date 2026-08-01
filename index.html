@@ -440,7 +440,7 @@ function defaultDB(){
     depots:[{id:'dep1', nom:'Dépôt principal'}],
     clients:[], fournisseurs:[], produits:[],
     devis:[], proformas:[], commandes:[], factures:[], avoirs:[], retours:[], bl:[], bc:[], fachats:[], retoursF:[],
-    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[],
+    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[], relances:[],
     employes:[], paies:[],
     comptes:[{id:'cpt-caisse', nom:'Caisse', type:'caisse', soldeInitial:0},{id:'cpt-banque', nom:'Banque principale', type:'banque', soldeInitial:0}],
     securite:{actif:false, admin:'', vendeur:''},
@@ -688,6 +688,31 @@ $('#overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeMo
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
 /* ---------- Tableau de bord ---------- */
+/* Pas d'envoi automatique réel (aucun compte WhatsApp Business/SMTP
+   configuré) : ce qui est réellement livrable sans ces identifiants, c'est
+   de faire remonter proactivement qui relancer, avec l'historique des
+   relances déjà envoyées, plutôt que de laisser l'utilisateur y penser
+   lui-même via l'échéancier. */
+function relancesAFaire(){
+  const now = new Date(today());
+  const parClient = {};
+  DB.factures.forEach(f=>{
+    const reste = resteFacture(f);
+    if(reste<=0.004) return;
+    const ech = new Date(f.echeance||f.date);
+    if(ech>=now) return;
+    const retard = Math.floor((now-ech)/864e5);
+    const cid = f.clientId;
+    if(!parClient[cid]) parClient[cid] = {clientId:cid, total:0, retardMax:0, n:0};
+    parClient[cid].total = r2(parClient[cid].total + reste);
+    parClient[cid].retardMax = Math.max(parClient[cid].retardMax, retard);
+    parClient[cid].n++;
+  });
+  return Object.values(parClient).sort((a,b)=>b.retardMax-a.retardMax);
+}
+function derniereRelance(clientId){
+  return (DB.relances||[]).filter(r=>r.clientId===clientId).sort((a,b)=>b.date.localeCompare(a.date))[0];
+}
 function vDashboard(){
   const an = new Date().getFullYear(), mois = new Date().getMonth();
   let caAn=0, caMois=0, impaye=0, aPayer=0;
@@ -705,6 +730,7 @@ function vDashboard(){
   const devisAttente = DB.devis.filter(d=>d.statut==='en attente').length;
   const bcEnCours = DB.bc.filter(b=>(b.statut||'en cours')==='en cours').length;
   const recentes = [...DB.factures].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  const relances = relancesAFaire();
 
   return `
   <div class="page-head"><div><h2>Tableau de bord</h2><div class="sub">${new Date().toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long', year:'numeric'})} — ${esc(DB.societe.nom)}</div></div>
@@ -721,6 +747,14 @@ function vDashboard(){
       <div class="chart" id="chart"></div>
     </div>
     <div style="display:flex; flex-direction:column; gap:14px">
+      <div class="card card-pad">
+        <h3>📣 Relances à faire (${relances.length})</h3>
+        ${relances.length ? `<table class="list"><tbody>${relances.slice(0,6).map(r=>{
+          const cl = clientById(r.clientId); const dr = derniereRelance(r.clientId);
+          return `<tr><td><b>${esc(cl?.nom||'—')}</b><br><small style="color:var(--muted)">${r.n} facture(s) · ${r.retardMax} j de retard${dr?` · dernière relance niv.${esc(dr.niveau)} le ${dfr(dr.date)}`:''}</small></td>
+          <td class="num">${fmtDH(r.total)}<br><button class="btn btn-ghost btn-sm" onclick="openRelance('${r.clientId}')">Relancer →</button></td></tr>`;
+        }).join('')}</tbody></table>` : '<div class="empty">Aucune facture en retard 👍</div>'}
+      </div>
       <div class="card card-pad">
         <h3>⚠ Alertes de stock (${alertes.length})</h3>
         ${alertes.length ? `<table class="list"><tbody>${alertes.slice(0,6).map(p=>`
@@ -2650,6 +2684,8 @@ function imprimerRelance(clientId, niv){
   proposerSortie(`${niv==='3'?'Mise en demeure':'Relance '+niv} ${cl.nom}.pdf`, cl.tel,
     niv==='3' ? `Mise en demeure : merci de régulariser sans délai le montant dû de ${fmt(total)} DH (voir document ci-joint).`
               : `Bonjour, un rappel concernant des factures en attente de règlement pour un montant total de ${fmt(total)} DH — détail en pièce jointe.`);
+  DB.relances.push({id:uid(), clientId, niveau:niv, date:today(), montant:total});
+  saveDB();
 }
 
 /* ---------- Inventaire physique ---------- */
