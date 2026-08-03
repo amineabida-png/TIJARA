@@ -330,6 +330,8 @@ table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
       <button data-view="bc"><span class="ico">⇤</span><span class="txt">Bons de commande</span></button>
       <button data-view="fachats"><span class="ico">▥</span><span class="txt">Factures d'achat</span></button>
       <button data-view="retoursF"><span class="ico">⟳</span><span class="txt">Retours fournisseurs</span></button>
+      <div class="sep">Chantiers</div>
+      <button data-view="chantiers"><span class="ico">⛏</span><span class="txt">Chantiers</span></button>
       <div class="sep">Caisse &amp; finances</div>
       <button data-view="caisse"><span class="ico">⌸</span><span class="txt">Caisse (POS)</span></button>
       <button data-view="charges"><span class="ico">▽</span><span class="txt">Charges</span></button>
@@ -440,10 +442,10 @@ function defaultDB(){
     depots:[{id:'dep1', nom:'Dépôt principal'}],
     clients:[], fournisseurs:[], produits:[],
     devis:[], proformas:[], commandes:[], factures:[], avoirs:[], retours:[], bl:[], bc:[], fachats:[], retoursF:[],
-    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[], relances:[],
+    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[], relances:[], chantiers:[],
     employes:[], paies:[],
     comptes:[{id:'cpt-caisse', nom:'Caisse', type:'caisse', soldeInitial:0},{id:'cpt-banque', nom:'Banque principale', type:'banque', soldeInitial:0}],
-    securite:{actif:false, admin:'', vendeur:''},
+    securite:{actif:false, admin:'', vendeur:'', comptable:'', magasinier:''},
     paieConfig: paieDefauts2026(),
     seq:{}
   };
@@ -460,7 +462,7 @@ function migrate(data){
   });
   if(!Array.isArray(d.comptes) || !d.comptes.length)
     d.comptes = [{id:'cpt-caisse', nom:'Caisse', type:'caisse', soldeInitial:0},{id:'cpt-banque', nom:'Banque principale', type:'banque', soldeInitial:0}];
-  d.securite = Object.assign({actif:false, admin:'', vendeur:''}, d.securite||{});
+  d.securite = Object.assign({actif:false, admin:'', vendeur:'', comptable:'', magasinier:''}, d.securite||{});
   d.paieConfig = Object.assign(paieDefauts2026(), d.paieConfig||{});
   if(!Array.isArray(d.paieConfig.bareme) || !d.paieConfig.bareme.length) d.paieConfig.bareme = paieDefauts2026().bareme;
   if(!Array.isArray(d.paieConfig.anciennete) || !d.paieConfig.anciennete.length) d.paieConfig.anciennete = paieDefauts2026().anciennete;
@@ -665,14 +667,16 @@ function syncNav(){
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.view===currentView));
 }
 function render(){
-  if(ROLE==='vendeur' && !VUES_VENDEUR.includes(currentView)){ currentView = 'caisse'; syncNav(); }
+  const vues = vuesAutorisees();
+  if(vues && !vues.includes(currentView)){ currentView = vues[0]; syncNav(); }
   const v = currentView;
   const fn = {dashboard:vDashboard, clients:()=>vTiers('clients'), fournisseurs:()=>vTiers('fournisseurs'),
     produits:vProduits, devis:()=>vDocs('devis'), proformas:()=>vDocs('proformas'), commandes:()=>vDocs('commandes'),
     factures:()=>vDocs('factures'), avoirs:()=>vDocs('avoirs'), retours:()=>vDocs('retours'), bl:()=>vDocs('bl'),
     bc:()=>vDocs('bc'), fachats:()=>vDocs('fachats'), retoursF:()=>vDocs('retoursF'),
     caisse:vCaisse, charges:vCharges, tresorerie:vTresorerie, paie:vPaie,
-    reglements:vReglements, echeancier:vEcheancier, rapports:vRapports, parametres:vParametres}[v];
+    reglements:vReglements, echeancier:vEcheancier, rapports:vRapports, parametres:vParametres,
+    chantiers:vChantiers}[v];
   $('#view').innerHTML = fn ? fn() : '';
   if(v==='dashboard') drawChart();
 }
@@ -1097,6 +1101,11 @@ function editDoc(type, id){
       ${DB.factures.map(f=>`<option value="${f.id}" ${d?.origineId===f.id?'selected':''}>${esc(f.numero)} — ${esc(clientById(f.clientId)?.nom||'')}</option>`).join('')}
     </select></div>` + depSel;
   if(type==='retoursF') extra = depSel;
+  const chantierSel = (DB.chantiers.length && ['devis','factures','bc','fachats'].includes(type)) ? `
+    <div class="field"><label>Chantier</label><select id="d_chantier">
+      <option value="">— aucun —</option>
+      ${DB.chantiers.map(ch=>`<option value="${ch.id}" ${d?.chantierId===ch.id?'selected':''}>${esc(ch.nom)}</option>`).join('')}
+    </select></div>` : '';
   openModal((id?'Modifier':'Nouveau')+' '+L.s + (d?` — ${d.numero}`:''), `
     <div class="grid3">
       <div class="field"><label>N° du document</label>
@@ -1105,6 +1114,7 @@ function editDoc(type, id){
         <select id="d_client">${tiers.map(c=>`<option value="${c.id}" ${d?.clientId===c.id?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></div>
       <div class="field"><label>Date</label><input id="d_date" type="date" value="${d?.date||today()}"></div>
       ${extra}
+      ${chantierSel}
     </div>
     ${type==='bc'?'<p style="margin-top:8px; font-size:.8rem; color:var(--muted)">Prix repris du catalogue = <b>prix d\u2019achat</b>. À la réception, le stock du dépôt choisi sera augmenté.</p>':''}
     ${type==='fachats'?'<p style="margin-top:8px; font-size:.8rem; color:var(--muted)">La facture d\u2019achat suit la <b>dette fournisseur</b>. Elle ne modifie pas le stock (l\u2019entrée se fait à la réception du bon de commande ou par mouvement manuel).</p>':''}
@@ -1189,6 +1199,7 @@ function saveDoc(type, id){
   if(type==='factures' || type==='fachats') base.echeance = $('#d_ech').value;
   if(type==='factures') base.rasTaux = Math.min(100, Math.max(0, parseFloat($('#d_ras').value)||0));
   if($('#d_depot')) base.depotId = $('#d_depot').value;
+  if($('#d_chantier')) base.chantierId = $('#d_chantier').value;
   if(type==='avoirs' || type==='retours'){
     const of = factureById($('#d_origine').value);
     base.origineId = of?.id || ''; base.origine = of?.numero || '';
@@ -2070,7 +2081,7 @@ function vParametres(){
 
   <div class="card card-pad" style="max-width:900px; margin-top:16px">
     <h3>Accès protégé</h3>
-    <p style="font-size:.85rem; color:var(--muted); margin-bottom:12px">Protection basique par mot de passe à l'ouverture (dissuasive, les données restant lisibles sur l'appareil). Le profil <b>vendeur</b> n'accède qu'à la caisse, aux ventes, aux clients et aux produits.</p>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:12px">Protection basique par mot de passe à l'ouverture (dissuasive, les données restant lisibles sur l'appareil). Chaque profil limite la navigation aux modules qui le concernent : <b>vendeur</b> (caisse, ventes, clients, produits), <b>comptable</b> (factures, achats, règlements, trésorerie, paie, rapports), <b>magasinier</b> (produits/stock, commandes, livraisons).</p>
     <label style="display:flex; align-items:center; gap:8px; font-size:.9rem; font-weight:600; margin-bottom:12px">
       <input type="checkbox" id="sec_actif" ${DB.securite.actif?'checked':''}> Activer le verrouillage à l'ouverture</label>
     <div class="grid2">
@@ -2078,8 +2089,16 @@ function vParametres(){
         <input id="sec_admin" type="password" placeholder="${DB.securite.admin?'••••••••':'Obligatoire pour activer'}"></div>
       <div class="field"><label>Mot de passe vendeur ${DB.securite.vendeur?'(défini — laisser vide pour conserver)':'(optionnel)'}</label>
         <input id="sec_vendeur" type="password" placeholder="${DB.securite.vendeur?'••••••••':'Accès caisse & ventes'}"></div>
+      <div class="field"><label>Mot de passe comptable ${DB.securite.comptable?'(défini — laisser vide pour conserver)':'(optionnel)'}</label>
+        <input id="sec_comptable" type="password" placeholder="${DB.securite.comptable?'••••••••':'Accès facturation & finances'}"></div>
+      <div class="field"><label>Mot de passe magasinier ${DB.securite.magasinier?'(défini — laisser vide pour conserver)':'(optionnel)'}</label>
+        <input id="sec_magasinier" type="password" placeholder="${DB.securite.magasinier?'••••••••':'Accès stock & commandes'}"></div>
     </div>
-    ${DB.securite.vendeur?`<label style="display:flex; align-items:center; gap:8px; font-size:.82rem; margin-top:8px"><input type="checkbox" id="sec_vendeur_off"> Supprimer le profil vendeur</label>`:''}
+    <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:8px">
+      ${DB.securite.vendeur?`<label style="display:flex; align-items:center; gap:8px; font-size:.82rem"><input type="checkbox" id="sec_vendeur_off"> Supprimer le profil vendeur</label>`:''}
+      ${DB.securite.comptable?`<label style="display:flex; align-items:center; gap:8px; font-size:.82rem"><input type="checkbox" id="sec_comptable_off"> Supprimer le profil comptable</label>`:''}
+      ${DB.securite.magasinier?`<label style="display:flex; align-items:center; gap:8px; font-size:.82rem"><input type="checkbox" id="sec_magasinier_off"> Supprimer le profil magasinier</label>`:''}
+    </div>
     <div style="display:flex; gap:10px; margin-top:14px">
       <button class="btn btn-primary" onclick="saveSecurite()">Enregistrer la sécurité</button>
       ${DB.securite.actif && DB.securite.admin?'<button class="btn" onclick="verrouiller()">🔒 Verrouiller maintenant</button>':''}
@@ -2328,6 +2347,10 @@ function editCharge(id){
       <div class="field" style="grid-column:1/-1"><label>Libellé <span class="req">*</span></label><input id="ch_lib" value="${esc(c.libelle||'')}" placeholder="Loyer magasin juillet, gasoil camion…"></div>
       <div class="field"><label>Montant (DH) <span class="req">*</span></label><input id="ch_mnt" type="number" step="0.01" min="0" value="${c.montant ?? ''}"></div>
       <div class="field"><label>Compte débité</label><select id="ch_cpt">${DB.comptes.map(x=>`<option value="${x.id}" ${c.compteId===x.id?'selected':''}>${esc(x.nom)}</option>`).join('')}</select></div>
+      ${DB.chantiers.length?`<div class="field"><label>Chantier</label><select id="ch_chantier">
+        <option value="">— aucun —</option>
+        ${DB.chantiers.map(ch=>`<option value="${ch.id}" ${c.chantierId===ch.id?'selected':''}>${esc(ch.nom)}</option>`).join('')}
+      </select></div>`:''}
     </div>`,
     `<button class="btn" onclick="closeModal()">Annuler</button>
      <button class="btn btn-primary" onclick="saveCharge('${id||''}')">Enregistrer</button>`);
@@ -2336,7 +2359,7 @@ function saveCharge(id){
   const lib = $('#ch_lib').value.trim(), m = parseFloat($('#ch_mnt').value);
   if(!lib) return toast('Le libellé est obligatoire.', true);
   if(isNaN(m) || m<=0) return toast('Montant invalide.', true);
-  const o = {date:$('#ch_date').value||today(), categorie:$('#ch_cat').value, libelle:lib, montant:r2(m), compteId:$('#ch_cpt').value};
+  const o = {date:$('#ch_date').value||today(), categorie:$('#ch_cat').value, libelle:lib, montant:r2(m), compteId:$('#ch_cpt').value, chantierId:$('#ch_chantier')?.value||''};
   if(id) Object.assign(DB.charges.find(x=>x.id===id), o);
   else { o.id = uid(); DB.charges.push(o); }
   saveDB(); closeModal(); render(); toast('Charge enregistrée ✓');
@@ -2345,6 +2368,114 @@ function delCharge(id){
   if(!confirm('Supprimer cette charge ?')) return;
   DB.charges = DB.charges.filter(c=>c.id!==id);
   saveDB(); render(); toast('Charge supprimée');
+}
+
+/* ---------- Chantiers (BTP) : marge par projet ---------- */
+/* Marge calculée en HT (la TVA est un flux de trésorerie, pas un coût/revenu
+   réel) : facturé - (achats liés + charges liées). Les devis et BC ne sont
+   pas des dépenses/revenus engagés, juste indicatifs. */
+function calcChantier(chantierId){
+  const devisTotal = DB.devis.filter(d=>d.chantierId===chantierId).reduce((a,d)=>a+calcDoc(d).ht,0);
+  const factures = DB.factures.filter(f=>f.chantierId===chantierId);
+  const facture = factures.reduce((a,f)=>a+calcDoc(f).ht,0);
+  const achats = DB.fachats.filter(f=>f.chantierId===chantierId).reduce((a,f)=>a+calcDoc(f).ht,0);
+  const charges = DB.charges.filter(c=>c.chantierId===chantierId).reduce((a,c)=>a+(Number(c.montant)||0),0);
+  const depenses = r2(achats + charges);
+  const marge = r2(facture - depenses);
+  const margePct = facture>0 ? r2(marge/facture*100) : 0;
+  return { devisTotal:r2(devisTotal), facture:r2(facture), achats:r2(achats), charges:r2(charges), depenses, marge, margePct };
+}
+function vChantiers(){
+  const arr = [...DB.chantiers].sort((a,b)=>(b.dateDebut||'').localeCompare(a.dateDebut||''));
+  return `
+  <div class="page-head"><div><h2>Chantiers</h2><div class="sub">Suivi de marge par projet — devis, factures, achats et charges rattachés</div></div>
+    <button class="btn btn-primary" onclick="editChantier()">+ Nouveau chantier</button></div>
+  ${arr.length ? `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px">${arr.map(ch=>{
+    const c = calcChantier(ch.id);
+    const cl = clientById(ch.clientId);
+    const cls = {'en cours':'b-amber','terminé':'b-green','suspendu':'b-gray'}[ch.statut]||'b-amber';
+    return `<div class="card card-pad">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px">
+        <div><h3 style="margin-bottom:2px">${esc(ch.nom)}</h3><div style="font-size:.8rem; color:var(--muted)">${esc(cl?.nom||'—')}${ch.adresse?' · '+esc(ch.adresse):''}</div></div>
+        <span class="badge ${cls}">${esc(ch.statut)}</span>
+      </div>
+      <div class="chips" style="margin-top:10px">
+        <div class="chip">Facturé HT<b>${fmtDH(c.facture)}</b></div>
+        <div class="chip">Dépenses HT<b style="color:var(--red)">${fmtDH(c.depenses)}</b></div>
+        <div class="chip">Marge<b style="color:${c.marge>=0?'#1E7A4E':'#B7362C'}">${fmtDH(c.marge)}${c.facture>0?` (${c.margePct}%)`:''}</b></div>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="vChantierDetail('${ch.id}')">Détail →</button>
+        <button class="btn btn-ghost btn-sm" onclick="editChantier('${ch.id}')">✎ Modifier</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delChantier('${ch.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('')}</div>` : '<div class="empty">Aucun chantier pour l’instant.<br>Créez-en un pour suivre devis, factures, achats et marge par projet.</div>'}`;
+}
+function editChantier(id){
+  const ch = id ? DB.chantiers.find(x=>x.id===id) : {statut:'en cours', dateDebut:today()};
+  openModal((id?'Modifier':'Nouveau')+' chantier', `
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1"><label>Nom du chantier <span class="req">*</span></label>
+        <input id="chn_nom" value="${esc(ch.nom||'')}" placeholder="Cuisine RDC — Villa M. Anas"></div>
+      <div class="field"><label>Client</label><select id="chn_client">
+        <option value="">— aucun —</option>
+        ${DB.clients.map(c=>`<option value="${c.id}" ${ch.clientId===c.id?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></div>
+      <div class="field"><label>Statut</label><select id="chn_statut">
+        ${['en cours','terminé','suspendu'].map(s=>`<option ${ch.statut===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="field" style="grid-column:1/-1"><label>Adresse</label><input id="chn_adresse" value="${esc(ch.adresse||'')}"></div>
+      <div class="field"><label>Date de début</label><input id="chn_debut" type="date" value="${ch.dateDebut||today()}"></div>
+      <div class="field"><label>Date de fin (prévue)</label><input id="chn_fin" type="date" value="${ch.dateFin||''}"></div>
+      <div class="field"><label>Budget prévisionnel (DH)</label><input id="chn_budget" type="number" step="0.01" min="0" value="${ch.budget ?? ''}"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label>Notes</label><textarea id="chn_notes" rows="2">${esc(ch.notes||'')}</textarea></div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveChantier('${id||''}')">Enregistrer</button>`);
+}
+function saveChantier(id){
+  const nom = $('#chn_nom').value.trim();
+  if(!nom) return toast('Le nom du chantier est obligatoire.', true);
+  const o = {
+    nom, clientId:$('#chn_client').value, statut:$('#chn_statut').value, adresse:$('#chn_adresse').value.trim(),
+    dateDebut:$('#chn_debut').value||today(), dateFin:$('#chn_fin').value, budget:parseFloat($('#chn_budget').value)||0,
+    notes:$('#chn_notes').value.trim()
+  };
+  if(id) Object.assign(DB.chantiers.find(x=>x.id===id), o);
+  else { o.id = uid(); DB.chantiers.push(o); }
+  saveDB(); closeModal(); render(); toast('Chantier enregistré ✓');
+}
+function delChantier(id){
+  if(!confirm('Supprimer ce chantier ? Les documents déjà liés resteront mais ne seront plus rattachés à un chantier.')) return;
+  ['devis','factures','bc','fachats'].forEach(t=> DB[t].forEach(d=>{ if(d.chantierId===id) d.chantierId=''; }));
+  DB.charges.forEach(c=>{ if(c.chantierId===id) c.chantierId=''; });
+  DB.chantiers = DB.chantiers.filter(x=>x.id!==id);
+  saveDB(); render(); toast('Chantier supprimé');
+}
+function vChantierDetail(id){
+  const ch = DB.chantiers.find(x=>x.id===id); if(!ch) return;
+  const c = calcChantier(id);
+  const cl = clientById(ch.clientId);
+  const lignesDoc = arr => arr.length ? `<table class="list"><tbody>${arr.map(d=>`
+    <tr><td><b>${esc(d.numero)}</b><br><small style="color:var(--muted)">${dfr(d.date)}</small></td>
+    <td class="num">${fmtDH(calcDoc(d).ht)} HT</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Aucun.</div>';
+  openModal(`Chantier — ${esc(ch.nom)}`, `
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:10px">${esc(cl?.nom||'—')}${ch.adresse?' · '+esc(ch.adresse):''} · ${dfr(ch.dateDebut)}${ch.dateFin?' → '+dfr(ch.dateFin):''}</p>
+    <div class="chips" style="margin-bottom:14px">
+      <div class="chip">Devis émis<b>${fmtDH(c.devisTotal)}</b></div>
+      <div class="chip">Facturé HT<b>${fmtDH(c.facture)}</b></div>
+      <div class="chip">Achats HT<b>${fmtDH(c.achats)}</b></div>
+      <div class="chip">Charges<b>${fmtDH(c.charges)}</b></div>
+      <div class="chip">Marge<b style="color:${c.marge>=0?'#1E7A4E':'#B7362C'}">${fmtDH(c.marge)}${c.facture>0?` (${c.margePct}%)`:''}</b></div>
+      ${ch.budget?`<div class="chip">Budget prévu<b>${fmtDH(ch.budget)}</b></div>`:''}
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+      <div><h3 style="font-size:.85rem; margin-bottom:6px">Devis</h3>${lignesDoc(DB.devis.filter(d=>d.chantierId===id))}</div>
+      <div><h3 style="font-size:.85rem; margin-bottom:6px">Factures</h3>${lignesDoc(DB.factures.filter(d=>d.chantierId===id))}</div>
+      <div><h3 style="font-size:.85rem; margin-bottom:6px">Bons de commande</h3>${lignesDoc(DB.bc.filter(d=>d.chantierId===id))}</div>
+      <div><h3 style="font-size:.85rem; margin-bottom:6px">Factures d'achat</h3>${lignesDoc(DB.fachats.filter(d=>d.chantierId===id))}</div>
+    </div>
+    ${ch.notes?`<div class="doc-notes" style="margin-top:10px; white-space:pre-wrap">${esc(ch.notes)}</div>`:''}`,
+    `<button class="btn" onclick="closeModal()">Fermer</button>`, true);
 }
 
 /* ---------- Caisse (point de vente) ---------- */
@@ -2745,7 +2876,13 @@ function imprimerFeuilleComptage(dep){
 
 /* ---------- Sécurité (verrouillage) ---------- */
 let ROLE = 'admin';
-const VUES_VENDEUR = ['dashboard','caisse','devis','proformas','commandes','factures','avoirs','retours','bl','reglements','clients','produits'];
+const VUES_PAR_ROLE = {
+  vendeur: ['dashboard','caisse','devis','proformas','commandes','factures','avoirs','retours','bl','reglements','clients','produits'],
+  comptable: ['dashboard','factures','avoirs','retours','fachats','retoursF','reglements','charges','tresorerie','echeancier','rapports','paie','clients','fournisseurs','chantiers'],
+  magasinier: ['dashboard','produits','bc','bl','retoursF','fournisseurs','chantiers']
+};
+const VUES_VENDEUR = VUES_PAR_ROLE.vendeur; // conservé pour compatibilité
+function vuesAutorisees(){ return VUES_PAR_ROLE[ROLE] || null; } // null = accès complet (admin)
 function hashPw(s){
   let h = 5381;
   for(const ch of String(s)) h = ((h*33) ^ ch.codePointAt(0)) >>> 0;
@@ -2771,28 +2908,33 @@ function afficherVerrou(){
 }
 function deverrouiller(){
   const h = hashPw(document.getElementById('lockPw').value);
-  if(h === DB.securite.admin) ROLE = 'admin';
-  else if(DB.securite.vendeur && h === DB.securite.vendeur) ROLE = 'vendeur';
-  else { document.getElementById('lockErr').textContent = 'Mot de passe incorrect.'; return; }
+  const role = ['admin','vendeur','comptable','magasinier'].find(r => DB.securite[r] && h === DB.securite[r]);
+  if(!role){ document.getElementById('lockErr').textContent = 'Mot de passe incorrect.'; return; }
+  ROLE = role;
   document.getElementById('lockScreen').style.display = 'none';
-  if(ROLE==='vendeur' && !VUES_VENDEUR.includes(currentView)) currentView = 'caisse';
+  const vues = vuesAutorisees();
+  if(vues && !vues.includes(currentView)) currentView = vues[0];
   appliquerRole(); syncNav(); render();
-  toast(ROLE==='vendeur' ? 'Session vendeur — accès limité aux ventes et à la caisse.' : 'Bienvenue ✓');
+  toast(ROLE==='admin' ? 'Bienvenue ✓' : `Session ${ROLE} — accès limité aux modules concernés.`);
 }
 function appliquerRole(){
+  const vues = vuesAutorisees();
   document.querySelectorAll('#nav button').forEach(b=>{
-    b.style.display = (ROLE==='vendeur' && !VUES_VENDEUR.includes(b.dataset.view)) ? 'none' : '';
+    b.style.display = (vues && !vues.includes(b.dataset.view)) ? 'none' : '';
   });
 }
 function verrouiller(){ afficherVerrou(); }
 function saveSecurite(){
   const actif = $('#sec_actif').checked;
-  const adm = $('#sec_admin').value, vnd = $('#sec_vendeur').value;
+  const adm = $('#sec_admin').value;
   if(actif && !adm && !DB.securite.admin) return toast('Définissez le mot de passe administrateur.', true);
   DB.securite.actif = actif;
   if(adm) DB.securite.admin = hashPw(adm);
-  if(vnd) DB.securite.vendeur = hashPw(vnd);
-  if($('#sec_vendeur_off') && $('#sec_vendeur_off').checked) DB.securite.vendeur = '';
+  ['vendeur','comptable','magasinier'].forEach(r=>{
+    const v = $('#sec_'+r)?.value;
+    if(v) DB.securite[r] = hashPw(v);
+    if($('#sec_'+r+'_off') && $('#sec_'+r+'_off').checked) DB.securite[r] = '';
+  });
   saveDB(); render(); toast('Sécurité mise à jour ✓');
 }
 
