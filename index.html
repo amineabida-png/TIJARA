@@ -411,6 +411,16 @@ const fmtDH = n => fmt(n) + ' DH';
 const today = () => new Date().toISOString().slice(0,10);
 const dfr = d => d ? d.split('-').reverse().join('/') : '';
 const r2 = n => Math.round((Number(n)||0)*100)/100;
+/* Journal d'audit : qui (profil déverrouillé — admin/vendeur/comptable/
+   magasinier, le seul niveau d'identité que ce système de verrouillage par
+   code partagé peut distinguer) a fait quoi et quand, sur les actions qui
+   comptent (création/modification/suppression de documents, paiements,
+   sécurité). Purge au-delà de 500 entrées pour ne pas alourdir la sauvegarde. */
+function logAudit(action, details){
+  DB.auditLog = DB.auditLog || [];
+  DB.auditLog.push({id:uid(), date:new Date().toISOString(), role:(typeof ROLE!=='undefined'?ROLE:'admin'), action, details:details||''});
+  if(DB.auditLog.length>500) DB.auditLog = DB.auditLog.slice(-500);
+}
 
 /* ---------- Stockage & migration ---------- */
 const DB_KEY = 'tijara_gcm_v1';
@@ -442,7 +452,7 @@ function defaultDB(){
     depots:[{id:'dep1', nom:'Dépôt principal'}],
     clients:[], fournisseurs:[], produits:[],
     devis:[], proformas:[], commandes:[], factures:[], avoirs:[], retours:[], bl:[], bc:[], fachats:[], retoursF:[],
-    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[], relances:[], chantiers:[],
+    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[], relances:[], chantiers:[], auditLog:[],
     employes:[], paies:[],
     comptes:[{id:'cpt-caisse', nom:'Caisse', type:'caisse', soldeInitial:0},{id:'cpt-banque', nom:'Banque principale', type:'banque', soldeInitial:0}],
     securite:{actif:false, admin:'', vendeur:'', comptable:'', magasinier:''},
@@ -1204,12 +1214,14 @@ function saveDoc(type, id){
     const of = factureById($('#d_origine').value);
     base.origineId = of?.id || ''; base.origine = of?.numero || '';
   }
+  let docFinal;
   if(id){
     const d = DB[type].find(x=>x.id===id);
     if(type==='factures'){ appliquerStock(d.lignes, +1, d.depotId); Object.assign(d, base); appliquerStock(lignes, -1, base.depotId); }
     else if((type==='avoirs' && !d.sansStock) || type==='retours'){ appliquerStock(d.lignes, -1, d.depotId); Object.assign(d, base); appliquerStock(lignes, +1, base.depotId); }
     else if(type==='retoursF'){ appliquerStock(d.lignes, +1, d.depotId); Object.assign(d, base); appliquerStock(lignes, -1, base.depotId); }
     else Object.assign(d, base);
+    docFinal = d;
   } else {
     base.id = uid();
     if(!base.numero) base.numero = nextNumero(type);
@@ -1218,7 +1230,9 @@ function saveDoc(type, id){
     if(type==='factures') appliquerStock(lignes, -1, base.depotId);
     if(type==='avoirs' || type==='retours') appliquerStock(lignes, +1, base.depotId);
     if(type==='retoursF') appliquerStock(lignes, -1, base.depotId);
+    docFinal = base;
   }
+  logAudit(id?'modifier':'créer', `${DOCLBL[type]?.s||type} ${docFinal.numero}`);
   saveDB(); closeModal(); render(); toast('Document enregistré ✓');
 }
 function delDoc(type, id){
@@ -1238,6 +1252,7 @@ function delDoc(type, id){
   if(type==='retoursF') appliquerStock(d.lignes, +1, d.depotId);
   if(type==='bc' && (d.statut||'en cours')==='reçue') appliquerStock(d.lignes, -1, d.depotId);
   DB[type] = DB[type].filter(x=>x.id!==id);
+  logAudit('supprimer', `${DOCLBL[type]?.s||type} ${d.numero}`);
   saveDB(); render(); toast('Document supprimé');
 }
 
@@ -1403,12 +1418,14 @@ function saveReglement(tab){
   if(MODES_SUIVIS(mode)) o.statut = 'en portefeuille';
   if(tab==='C') o.recu = nextNumero('recus');
   (tab==='C' ? DB.reglements : DB.reglementsF).push(o);
+  logAudit('paiement', `${tab==='C'?'Encaissement':'Paiement'} ${fmtDH(o.montant)} (${mode})`);
   saveDB(); closeModal(); render(); toast(tab==='C'?'Règlement encaissé ✓':'Paiement enregistré ✓');
 }
 function delReglement(tab, id){
   if(!confirm('Supprimer ce règlement ?')) return;
   if(tab==='C') DB.reglements = DB.reglements.filter(r=>r.id!==id);
   else DB.reglementsF = DB.reglementsF.filter(r=>r.id!==id);
+  logAudit('supprimer', 'Règlement '+id);
   saveDB(); render(); toast('Règlement supprimé');
 }
 
@@ -2103,6 +2120,19 @@ function vParametres(){
       <button class="btn btn-primary" onclick="saveSecurite()">Enregistrer la sécurité</button>
       ${DB.securite.actif && DB.securite.admin?'<button class="btn" onclick="verrouiller()">🔒 Verrouiller maintenant</button>':''}
     </div>
+  </div>
+
+  <div class="card card-pad" style="max-width:900px; margin-top:16px">
+    <h3>Journal d'audit</h3>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:12px">Actions récentes (créations, modifications, suppressions, paiements, connexions). Le profil enregistré est celui du verrouillage par code (admin/vendeur/comptable/magasinier) — pas une identité individuelle nommée.</p>
+    ${(DB.auditLog||[]).length ? `<div style="max-height:320px; overflow-y:auto">
+      <table class="list"><thead><tr><th>Date</th><th>Profil</th><th>Action</th><th>Détail</th></tr></thead><tbody>
+      ${[...DB.auditLog].reverse().slice(0,200).map(e=>`
+        <tr><td style="white-space:nowrap">${new Date(e.date).toLocaleString('fr-FR')}</td>
+        <td><span class="badge b-gray">${esc(e.role)}</span></td>
+        <td>${esc(e.action)}</td><td>${esc(e.details)}</td></tr>`).join('')}
+      </tbody></table>
+    </div>` : '<div class="empty">Aucune action enregistrée pour l’instant.</div>'}
   </div>
 
   <div class="card card-pad" style="max-width:900px; margin-top:16px">
@@ -2911,6 +2941,8 @@ function deverrouiller(){
   const role = ['admin','vendeur','comptable','magasinier'].find(r => DB.securite[r] && h === DB.securite[r]);
   if(!role){ document.getElementById('lockErr').textContent = 'Mot de passe incorrect.'; return; }
   ROLE = role;
+  logAudit('connexion', 'Déverrouillage profil '+role);
+  saveDB();
   document.getElementById('lockScreen').style.display = 'none';
   const vues = vuesAutorisees();
   if(vues && !vues.includes(currentView)) currentView = vues[0];
@@ -2935,6 +2967,7 @@ function saveSecurite(){
     if(v) DB.securite[r] = hashPw(v);
     if($('#sec_'+r+'_off') && $('#sec_'+r+'_off').checked) DB.securite[r] = '';
   });
+  logAudit('paramètres', 'Modification de la sécurité / des profils d’accès');
   saveDB(); render(); toast('Sécurité mise à jour ✓');
 }
 
