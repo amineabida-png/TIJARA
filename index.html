@@ -340,6 +340,8 @@ table.doc-lines .num{text-align:right; font-variant-numeric:tabular-nums}
       <div class="sep">Analyse</div>
       <button data-view="echeancier"><span class="ico">◷</span><span class="txt">Échéancier</span></button>
       <button data-view="rapports"><span class="ico">◫</span><span class="txt">Rapports</span></button>
+      <div class="sep">Prospection</div>
+      <button data-view="prospects"><span class="ico">◎</span><span class="txt">Prospects</span></button>
       <div class="sep">Données</div>
       <button data-view="clients"><span class="ico">☰</span><span class="txt">Clients</span></button>
       <button data-view="fournisseurs"><span class="ico">⌂</span><span class="txt">Fournisseurs</span></button>
@@ -452,7 +454,7 @@ function defaultDB(){
     depots:[{id:'dep1', nom:'Dépôt principal'}],
     clients:[], fournisseurs:[], produits:[],
     devis:[], proformas:[], commandes:[], factures:[], avoirs:[], retours:[], bl:[], bc:[], fachats:[], retoursF:[],
-    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[], relances:[], chantiers:[], auditLog:[],
+    reglements:[], reglementsF:[], charges:[], sessions:[], inventaires:[], relances:[], chantiers:[], auditLog:[], prospects:[],
     employes:[], paies:[],
     comptes:[{id:'cpt-caisse', nom:'Caisse', type:'caisse', soldeInitial:0},{id:'cpt-banque', nom:'Banque principale', type:'banque', soldeInitial:0}],
     securite:{actif:false, admin:'', vendeur:'', comptable:'', magasinier:''},
@@ -686,7 +688,7 @@ function render(){
     bc:()=>vDocs('bc'), fachats:()=>vDocs('fachats'), retoursF:()=>vDocs('retoursF'),
     caisse:vCaisse, charges:vCharges, tresorerie:vTresorerie, paie:vPaie,
     reglements:vReglements, echeancier:vEcheancier, rapports:vRapports, parametres:vParametres,
-    chantiers:vChantiers}[v];
+    chantiers:vChantiers, prospects:vProspects}[v];
   $('#view').innerHTML = fn ? fn() : '';
   if(v==='dashboard') drawChart();
 }
@@ -2506,6 +2508,80 @@ function vChantierDetail(id){
     </div>
     ${ch.notes?`<div class="doc-notes" style="margin-top:10px; white-space:pre-wrap">${esc(ch.notes)}</div>`:''}`,
     `<button class="btn" onclick="closeModal()">Fermer</button>`, true);
+}
+
+/* ---------- CRM léger : pipeline prospects ---------- */
+const ETAPES_PROSPECT = ['nouveau','contacté','devis envoyé','gagné','perdu'];
+function vProspects(){
+  const arr = DB.prospects||[];
+  return `
+  <div class="page-head"><div><h2>Prospects</h2><div class="sub">Pipeline commercial — du premier contact au client gagné</div></div>
+    <button class="btn btn-primary" onclick="editProspect()">+ Nouveau prospect</button></div>
+  <div style="display:grid; grid-template-columns:repeat(5,minmax(190px,1fr)); gap:12px; overflow-x:auto">
+    ${ETAPES_PROSPECT.map(etape=>{
+      const list = arr.filter(p=>(p.etape||'nouveau')===etape);
+      return `<div style="min-width:190px">
+        <h3 style="font-size:.78rem; text-transform:uppercase; color:var(--muted); margin-bottom:8px">${esc(etape)} (${list.length})</h3>
+        <div style="display:flex; flex-direction:column; gap:8px">
+        ${list.length ? list.map(p=>`
+          <div class="card card-pad" style="padding:10px">
+            <b style="font-size:.88rem">${esc(p.nom)}</b>
+            ${p.tel?`<div style="font-size:.78rem; color:var(--muted)">${esc(p.tel)}</div>`:''}
+            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:8px">
+              ${etape!=='gagné' && etape!=='perdu' ? `<button class="btn btn-ghost btn-sm" title="Étape suivante" onclick="avancerProspect('${p.id}')">→</button>` : ''}
+              ${etape==='devis envoyé' ? `<button class="btn btn-ghost btn-sm" title="Convertir en client" onclick="prospectVersClient('${p.id}')" style="color:var(--green)">✓ Client</button>` : ''}
+              <button class="btn btn-ghost btn-sm" onclick="editProspect('${p.id}')">✎</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delProspect('${p.id}')">🗑</button>
+            </div>
+          </div>`).join('') : '<div class="empty" style="font-size:.78rem; padding:10px">—</div>'}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function editProspect(id){
+  const p = id ? DB.prospects.find(x=>x.id===id) : {etape:'nouveau'};
+  openModal((id?'Modifier':'Nouveau')+' prospect', `
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1"><label>Nom <span class="req">*</span></label><input id="pr_nom" value="${esc(p.nom||'')}"></div>
+      <div class="field"><label>Téléphone</label><input id="pr_tel" value="${esc(p.tel||'')}"></div>
+      <div class="field"><label>Email</label><input id="pr_email" type="email" value="${esc(p.email||'')}"></div>
+      <div class="field"><label>Source</label><input id="pr_source" value="${esc(p.source||'')}" placeholder="Recommandation, site web, salon…"></div>
+      <div class="field"><label>Étape</label><select id="pr_etape">${ETAPES_PROSPECT.map(e=>`<option ${((p.etape||'nouveau')===e)?'selected':''}>${e}</option>`).join('')}</select></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label>Notes</label><textarea id="pr_notes" rows="2">${esc(p.notes||'')}</textarea></div>`,
+    `<button class="btn" onclick="closeModal()">Annuler</button>
+     <button class="btn btn-primary" onclick="saveProspect('${id||''}')">Enregistrer</button>`);
+}
+function saveProspect(id){
+  const nom = $('#pr_nom').value.trim();
+  if(!nom) return toast('Le nom est obligatoire.', true);
+  const o = { nom, tel:$('#pr_tel').value.trim(), email:$('#pr_email').value.trim(),
+    source:$('#pr_source').value.trim(), etape:$('#pr_etape').value, notes:$('#pr_notes').value.trim() };
+  if(id) Object.assign(DB.prospects.find(x=>x.id===id), o);
+  else { o.id = uid(); o.dateCreation = today(); DB.prospects.push(o); }
+  logAudit(id?'modifier':'créer', 'Prospect '+nom);
+  saveDB(); closeModal(); render(); toast('Prospect enregistré ✓');
+}
+function delProspect(id){
+  if(!confirm('Supprimer ce prospect ?')) return;
+  DB.prospects = DB.prospects.filter(x=>x.id!==id);
+  saveDB(); render(); toast('Prospect supprimé');
+}
+function avancerProspect(id){
+  const p = DB.prospects.find(x=>x.id===id); if(!p) return;
+  const i = ETAPES_PROSPECT.indexOf(p.etape||'nouveau');
+  if(i>=0 && i<ETAPES_PROSPECT.length-2) p.etape = ETAPES_PROSPECT[i+1];
+  saveDB(); render();
+}
+function prospectVersClient(id){
+  const p = DB.prospects.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`Créer le client "${p.nom}" à partir de ce prospect ?`)) return;
+  const cl = { id:uid(), nom:p.nom, ice:'', idf:'', adresse:'', ville:'', tel:p.tel||'', email:p.email||'', rc:'' };
+  DB.clients.push(cl);
+  p.etape = 'gagné'; p.clientId = cl.id;
+  logAudit('créer', 'Client '+p.nom+' (converti depuis prospect)');
+  saveDB(); render(); toast('Client créé à partir du prospect ✓');
 }
 
 /* ---------- Caisse (point de vente) ---------- */
