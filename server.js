@@ -218,7 +218,7 @@ function loginPage(error) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TIJARA — Connexion</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>body{background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;}.card{background:#1e293b;border:1px solid #334155;color:#e2e8f0;max-width:380px;width:90%;}</style>
+<style>body{background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;}.text-muted{color:#94a3b8!important;}.card{background:#1e293b;border:1px solid #334155;color:#e2e8f0;max-width:380px;width:90%;}</style>
 </head>
 <body>
 <div class="card p-4 shadow-lg">
@@ -244,7 +244,7 @@ function subscriptionExpiredPage(user) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Abonnement expiré — TIJARA</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>body{background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;}.card{background:#1e293b;border:1px solid #334155;color:#e2e8f0;max-width:460px;width:90%;text-align:center;}</style>
+<style>body{background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;}.text-muted{color:#94a3b8!important;}.card{background:#1e293b;border:1px solid #334155;color:#e2e8f0;max-width:460px;width:90%;text-align:center;}</style>
 </head>
 <body>
 <div class="card p-5 shadow-lg">
